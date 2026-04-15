@@ -1,0 +1,225 @@
+version: '3'
+
+vars:
+  API_PORT: 4002
+  UI_PORT: 4001
+  RAG_PORT: 4003
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # === Setup Tasks ===
+  setup:
+    desc: Setup both API and UI dependencies
+    cmds:
+      - task: setup:api
+      - task: setup:ui
+      - task: setup:rag
+
+  setup:api:
+    desc: Setup API dependencies with uv
+    dir: scl-api
+    cmds:
+      - uv sync
+
+  setup:ui:
+    desc: Setup UI dependencies
+    dir: scl-frontend
+    cmds:
+      - npm install
+
+  setup:rag:
+    desc: Setup RAG service dependencies with uv
+    dir: scl-rag
+    cmds:
+      - uv sync
+
+  # === Development Tasks ===
+  dev:
+    desc: Start API, UI and RAG in development mode (syncs dependencies first)
+    cmds:
+      - task: sync
+      - task: dev:api &
+      - task: dev:rag &
+      - task: dev:ui
+
+  sync:
+    desc: Sync all dependencies
+    cmds:
+      - task: sync:api
+      - task: sync:ui
+      - task: sync:rag
+
+  sync:api:
+    desc: Sync API dependencies with uv
+    dir: scl-api
+    cmds:
+      - uv sync
+
+  sync:ui:
+    desc: Sync UI dependencies with npm
+    dir: scl-frontend
+    cmds:
+      - npm install
+
+  sync:rag:
+    desc: Sync RAG service dependencies with uv
+    dir: scl-rag
+    cmds:
+      - uv sync
+
+  dev:api:
+    desc: Start API server (port {{.API_PORT}})
+    dir: scl-api
+    cmds:
+      - uv run uvicorn app.main:app --reload --port {{.API_PORT}}
+
+  dev:ui:
+    desc: Start UI dev server (port {{.UI_PORT}})
+    dir: scl-frontend
+    cmds:
+      - npm run dev
+
+  dev:rag:
+    desc: Start RAG service (port {{.RAG_PORT}})
+    dir: scl-rag
+    dotenv: ['scl-rag/.env']
+    cmds:
+      - uv run uvicorn app.main:app --reload --port {{.RAG_PORT}}
+
+  # === Milvus Tasks ===
+  milvus:start:
+    desc: Start Milvus standalone via Docker Compose
+    dir: scl-rag/scripts
+    cmds:
+      - docker compose -f docker-compose.milvus.yml up -d
+
+  milvus:stop:
+    desc: Stop Milvus containers
+    dir: scl-rag/scripts
+    cmds:
+      - docker compose -f docker-compose.milvus.yml down
+
+  milvus:clean:
+    desc: Stop Milvus and remove all volumes (data reset)
+    dir: scl-rag/scripts
+    cmds:
+      - docker compose -f docker-compose.milvus.yml down -v
+
+  milvus:logs:
+    desc: Tail Milvus container logs
+    dir: scl-rag/scripts
+    cmds:
+      - docker compose -f docker-compose.milvus.yml logs -f milvus
+
+  # === Start Tasks (Production-like) ===
+  start:
+    desc: Start both services
+    cmds:
+      - task: start:api &
+      - task: start:ui
+
+  start:api:
+    desc: Start API server
+    dir: scl-api
+    cmds:
+      - uv run uvicorn app.main:app --host 0.0.0.0 --port {{.API_PORT}}
+
+  start:ui:
+    desc: Build and preview UI
+    dir: scl-frontend
+    cmds:
+      - npm run build
+      - npm run preview -- --port {{.UI_PORT}}
+
+  # === Build Tasks ===
+  build:
+    desc: Build both API and UI
+    cmds:
+      - task: build:ui
+
+  build:ui:
+    desc: Build UI for production
+    dir: scl-frontend
+    cmds:
+      - npm run build
+
+  # === Test Tasks ===
+  test:
+    desc: Run all tests
+    cmds:
+      - task: test:api
+      - task: test:ui
+
+  test:api:
+    desc: Run API tests
+    dir: scl-api
+    cmds:
+      - uv run pytest
+
+  test:ui:
+    desc: Run UI tests
+    dir: scl-frontend
+    cmds:
+      - npm run test
+
+  # === Lint Tasks ===
+  lint:
+    desc: Lint both API and UI
+    cmds:
+      - task: lint:api
+      - task: lint:ui
+
+  lint:api:
+    desc: Lint API code
+    dir: scl-api
+    cmds:
+      - uv run ruff check .
+      - uv run black --check .
+
+  lint:ui:
+    desc: Lint UI code
+    dir: scl-frontend
+    cmds:
+      - npm run lint
+
+  # === Clean Tasks ===
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - task: clean:api
+      - task: clean:ui
+
+  clean:api:
+    desc: Clean API artifacts
+    dir: scl-api
+    cmds:
+      - cmd: rmdir /s /q .venv 2>nul
+        ignore_error: true
+      - cmd: rmdir /s /q __pycache__ 2>nul
+        ignore_error: true
+      - cmd: del /q uv.lock 2>nul
+        ignore_error: true
+
+  clean:ui:
+    desc: Clean UI artifacts
+    dir: scl-frontend
+    cmds:
+      - cmd: rmdir /s /q node_modules 2>nul
+        ignore_error: true
+      - cmd: rmdir /s /q dist 2>nul
+        ignore_error: true
+
+  clean:rag:
+    desc: Clean RAG service artifacts
+    dir: scl-rag
+    cmds:
+      - cmd: rmdir /s /q .venv 2>nul
+        ignore_error: true
+      - cmd: rmdir /s /q __pycache__ 2>nul
+        ignore_error: true
+      - cmd: del /q uv.lock 2>nul
+        ignore_error: true

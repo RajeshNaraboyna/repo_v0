@@ -1,0 +1,161 @@
+# =============================================================================
+# Unified Dockerfile — All-in-One (scl-api + scl-frontend + scl-rag)
+# =============================================================================
+# Runs all three services inside a single container using supervisord.
+#
+# Build:  docker build -f Dockerfile.allinone -t scl-mgmt .
+# Run:    docker run -p 4001:80 -p 4002:4002 -p 4003:4003 scl-mgmt
+# =============================================================================
+
+# ---- Stage 1: Build the frontend ----
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /build
+COPY scl-frontend/package.json scl-frontend/package-lock.json* ./
+RUN npm ci
+COPY scl-frontend/ ./
+RUN npm run build
+
+# ---- Stage 2: Install Python deps for both services ----
+FROM python:3.11-slim AS python-builder
+
+WORKDIR /build
+
+# Install build deps
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc g++ libpq-dev pkg-config libcairo2-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install scl-api deps
+COPY scl-api/pyproject.toml /build/scl-api/
+RUN pip install --no-cache-dir --prefix=/install /build/scl-api/
+
+# Install scl-rag deps
+COPY scl-rag/pyproject.toml /build/scl-rag/
+RUN pip install --no-cache-dir --prefix=/install /build/scl-rag/
+
+# ---- Stage 3: Final runtime image ----
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install nginx, supervisor, and runtime libs
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        nginx \
+        supervisor \
+        libpq5 \
+        libcairo2 \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Python packages from builder
+COPY --from=python-builder /install/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=python-builder /install/bin /usr/local/bin
+
+# Copy application source
+COPY scl-api/alembic.ini /app/scl-api/
+COPY scl-api/alembic/    /app/scl-api/alembic/
+COPY scl-api/app/         /app/scl-api/app/
+
+COPY scl-rag/app/         /app/scl-rag/app/
+
+# Copy frontend build artifacts
+COPY --from=frontend-builder /build/dist /usr/share/nginx/html
+
+# ---- Nginx config (all-in-one: proxy to localhost backends) ----
+RUN rm -f /etc/nginx/sites-enabled/default
+COPY <<'NGINX' /etc/nginx/conf.d/scl.conf
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml;
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:4002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /rag/ {
+        proxy_pass http://127.0.0.1:4003/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+NGINX
+
+# ---- Supervisord config ----
+COPY <<'SUPERVISOR' /etc/supervisor/conf.d/scl.conf
+[supervisord]
+nodaemon=true
+user=root
+logfile=/var/log/supervisor/supervisord.log
+pidfile=/var/run/supervisord.pid
+
+[program:nginx]
+command=nginx -g "daemon off;"
+autostart=true
+autorestart=true
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+
+[program:scl-api]
+command=uvicorn app.main:app --host 0.0.0.0 --port 4002
+directory=/app/scl-api
+autostart=true
+autorestart=true
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+
+[program:scl-rag]
+command=uvicorn app.main:app --host 0.0.0.0 --port 4003
+directory=/app/scl-rag
+autostart=true
+autorestart=true
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+SUPERVISOR
+
+RUN mkdir -p /var/log/supervisor
+
+# ---- Entrypoint script: run migrations then start supervisord ----
+COPY scripts/entrypoint-allinone.sh /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Ports: 80 (frontend/nginx), 4002 (api), 4003 (rag)
+EXPOSE 80 4002 4003
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:4002/health && curl -f http://localhost:4003/health || exit 1
+
+CMD ["/app/entrypoint.sh"]

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: scl-mgmt
+description: School Management System — Umbrella Helm Chart
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: scl-api
+    version: 0.1.0
+    repository: "file://charts/scl-api"
+  - name: scl-frontend
+    version: 0.1.0
+    repository: "file://charts/scl-frontend"
+  - name: scl-rag
+    version: 0.1.0
+    repository: "file://charts/scl-rag"

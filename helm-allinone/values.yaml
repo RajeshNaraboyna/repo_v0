@@ -1,0 +1,55 @@
+# =============================================================================
+# SCL All-in-One — Helm Values
+# =============================================================================
+
+replicaCount: 1
+
+image:
+  repository: scl-mgmt
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  httpPort: 80       # Frontend + reverse proxy
+  apiPort: 4002      # Direct API access (optional)
+  ragPort: 4003      # Direct RAG access (optional)
+
+env:
+  APP_ENV: production
+  DEBUG: "false"
+  DATABASE_URL: postgresql+asyncpg://scluser:sclpass@postgresql:5432/school_mgmt
+  SECRET_KEY: change-me-in-production
+  RAG_SERVICE_URL: http://127.0.0.1:4003
+  CORS_ORIGINS: '["*"]'
+  MILVUS_HOST: milvus
+  MILVUS_PORT: "19530"
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: scl.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

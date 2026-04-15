@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "scl-allinone.fullname" . }}
+  labels:
+    {{- include "scl-allinone.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.httpPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.service.apiPort }}
+      targetPort: api
+      protocol: TCP
+      name: api
+    - port: {{ .Values.service.ragPort }}
+      targetPort: rag
+      protocol: TCP
+      name: rag
+  selector:
+    {{- include "scl-allinone.selectorLabels" . | nindent 4 }}

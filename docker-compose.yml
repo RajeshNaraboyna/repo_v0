@@ -1,0 +1,194 @@
+version: "3.8"
+
+# =============================================================================
+# School Management System — Docker Compose
+# =============================================================================
+# Usage:
+#   docker compose up -d              # start all services
+#   docker compose up -d --build      # rebuild and start
+#   docker compose down               # stop all
+#   docker compose down -v            # stop and remove volumes
+#   docker compose logs -f scl-api    # tail logs for a service
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: scl-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scluser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sclpass}
+      POSTGRES_DB: ${POSTGRES_DB:-school_mgmt}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scluser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Milvus Dependencies — etcd
+  # ---------------------------------------------------------------------------
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: scl-milvus-etcd
+    restart: unless-stopped
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    volumes:
+      - etcd_data:/etcd
+    command: >
+      etcd
+      -advertise-client-urls=http://127.0.0.1:2379
+      -listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Milvus Dependencies — MinIO
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: scl-milvus-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Milvus Vector Database
+  # ---------------------------------------------------------------------------
+  milvus:
+    image: milvusdb/milvus:v2.4.17
+    container_name: scl-milvus-standalone
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # SCL API — FastAPI Backend
+  # ---------------------------------------------------------------------------
+  scl-api:
+    build:
+      context: ./scl-api
+      dockerfile: Dockerfile
+    container_name: scl-api
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-scluser}:${POSTGRES_PASSWORD:-sclpass}@postgres:5432/${POSTGRES_DB:-school_mgmt}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      CORS_ORIGINS: '["http://localhost", "http://localhost:4001"]'
+      RAG_SERVICE_URL: http://scl-rag:4003
+    ports:
+      - "4002:4002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # SCL RAG — Retrieval-Augmented Generation Service
+  # ---------------------------------------------------------------------------
+  scl-rag:
+    build:
+      context: ./scl-rag
+      dockerfile: Dockerfile
+    container_name: scl-rag
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      MILVUS_HOST: milvus
+      MILVUS_PORT: "19530"
+      CORS_ORIGINS: '["http://localhost", "http://localhost:4001", "http://scl-api:4002"]'
+    ports:
+      - "4003:4003"
+    depends_on:
+      milvus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # SCL Frontend — Nginx + Static React Build
+  # ---------------------------------------------------------------------------
+  scl-frontend:
+    build:
+      context: ./scl-frontend
+      dockerfile: Dockerfile
+    container_name: scl-frontend
+    restart: unless-stopped
+    ports:
+      - "4001:80"
+    depends_on:
+      scl-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  etcd_data:
+    driver: local
+  minio_data:
+    driver: local
+  milvus_data:
+    driver: local

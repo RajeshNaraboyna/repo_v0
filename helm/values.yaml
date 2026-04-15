@@ -1,0 +1,78 @@
+# =============================================================================
+# School Management System — Helm Values (Umbrella)
+# =============================================================================
+
+# ---- SCL API ----
+scl-api:
+  replicaCount: 2
+  image:
+    repository: scl-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 4002
+  env:
+    APP_ENV: production
+    DEBUG: "false"
+    DATABASE_URL: postgresql+asyncpg://scluser:sclpass@postgresql:5432/school_mgmt
+    SECRET_KEY: change-me-in-production
+    RAG_SERVICE_URL: http://scl-rag:4003
+    CORS_ORIGINS: '["http://scl-frontend"]'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ---- SCL Frontend ----
+scl-frontend:
+  replicaCount: 2
+  image:
+    repository: scl-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: scl.local
+        paths:
+          - path: /
+            pathType: Prefix
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ---- SCL RAG ----
+scl-rag:
+  replicaCount: 1
+  image:
+    repository: scl-rag
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 4003
+  env:
+    APP_ENV: production
+    DEBUG: "false"
+    MILVUS_HOST: milvus
+    MILVUS_PORT: "19530"
+    CORS_ORIGINS: '["http://scl-frontend", "http://scl-api"]'
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi

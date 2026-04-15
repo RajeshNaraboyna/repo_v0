@@ -1,0 +1,36 @@
+replicaCount: 1
+
+image:
+  repository: scl-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 4002
+
+env:
+  APP_ENV: production
+  DEBUG: "false"
+  DATABASE_URL: postgresql+asyncpg://scluser:sclpass@postgresql:5432/school_mgmt
+  SECRET_KEY: change-me-in-production
+  RAG_SERVICE_URL: http://scl-rag:4003
+  CORS_ORIGINS: '["http://scl-frontend"]'
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

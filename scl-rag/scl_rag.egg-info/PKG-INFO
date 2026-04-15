@@ -1,0 +1,65 @@
+Metadata-Version: 2.4
+Name: scl-rag
+Version: 0.1.0
+Summary: School Management RAG Service - Vector indexing and retrieval for student results
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.104.0
+Requires-Dist: uvicorn[standard]>=0.24.0
+Requires-Dist: pydantic[email]>=2.5.0
+Requires-Dist: pydantic-settings>=2.1.0
+Requires-Dist: pymilvus>=2.4.0
+Requires-Dist: sentence-transformers>=2.2.0
+Requires-Dist: httpx>=0.25.0
+Requires-Dist: loguru>=0.7.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: black>=23.10.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+
+# SCL RAG Service
+
+A Retrieval-Augmented Generation (RAG) service for the School Management System. Indexes student results (marks, grades, exam data) into a vector store for semantic search and retrieval.
+
+## Architecture
+
+Built following the pattern of the `sample-knowledge` service:
+
+- **FastAPI** backend on port `4003`
+- **ChromaDB** (embedded) for vector storage — no external services needed
+- **sentence-transformers** (`all-MiniLM-L6-v2`) for text embeddings
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/index/student-results` | Index a student's results into the vector store |
+| POST | `/api/v1/query` | Query the indexed student results |
+| GET | `/api/v1/index/stats` | Get collection statistics |
+| DELETE | `/api/v1/index/student/{student_id}` | Remove a student's indexed data |
+| GET | `/health` | Health check |
+
+## Setup
+
+```bash
+cd scl-rag
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+pip install -e .
+```
+
+## Run
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 4003 --reload
+```
+
+## Data Indexed
+
+Each student result is converted to a rich text document containing:
+- Student ID, name, class
+- Exam name, type, academic year
+- Subject, marks obtained, max marks, grade
+- PDF attachment status
+- Timestamps
