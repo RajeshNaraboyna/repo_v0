@@ -2,35 +2,30 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { ContentBlock } from '../../types'
 import RichTextEditor from './RichTextEditor'
+import { Box, Typography, IconButton, Tooltip, TextField, MenuItem } from '@mui/material'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import CloseIcon from '@mui/icons-material/Close'
 
 const BLOCK_LABELS: Record<string, string> = {
-  header: 'Paper Header',
-  instructions: 'Instructions',
-  section_title: 'Section Title',
-  question: 'Question',
-  text: 'Text Block',
-  image: 'Image',
-  divider: 'Divider',
+  header: 'Paper Header', instructions: 'Instructions', section_title: 'Section Title',
+  question: 'Question', text: 'Text Block', image: 'Image', divider: 'Divider',
 }
 
-const BLOCK_COLORS: Record<string, string> = {
-  header: 'border-l-blue-500 bg-blue-50/30',
-  instructions: 'border-l-amber-500 bg-amber-50/30',
-  section_title: 'border-l-purple-500 bg-purple-50/30',
-  question: 'border-l-green-500 bg-green-50/30',
-  text: 'border-l-gray-400 bg-gray-50/30',
-  image: 'border-l-pink-500 bg-pink-50/30',
-  divider: 'border-l-gray-300 bg-gray-50/30',
+const BLOCK_BORDER_COLOR: Record<string, string> = {
+  header: '#3b82f6', instructions: '#f59e0b', section_title: '#8b5cf6',
+  question: '#22c55e', text: '#9ca3af', image: '#ec4899', divider: '#d1d5db',
+}
+
+const BLOCK_BG: Record<string, string> = {
+  header: 'rgba(59,130,246,0.04)', instructions: 'rgba(245,158,11,0.04)',
+  section_title: 'rgba(139,92,246,0.04)', question: 'rgba(34,197,94,0.04)',
+  text: 'rgba(156,163,175,0.04)', image: 'rgba(236,72,153,0.04)', divider: 'rgba(209,213,219,0.04)',
 }
 
 const BLOCK_ICONS: Record<string, string> = {
-  header: '📄',
-  instructions: '📋',
-  section_title: '📌',
-  question: '❓',
-  text: '📝',
-  image: '🖼️',
-  divider: '➖',
+  header: '📄', instructions: '📋', section_title: '📌',
+  question: '❓', text: '📝', image: '🖼️', divider: '➖',
 }
 
 interface DraggableBlockProps {
@@ -42,27 +37,12 @@ interface DraggableBlockProps {
   onDuplicate: (id: string) => void
 }
 
-export default function DraggableBlock({
-  block,
-  isEditable,
-  onContentChange,
-  onMetadataChange,
-  onRemove,
-  onDuplicate,
-}: DraggableBlockProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: block.id })
+export default function DraggableBlock({ block, isEditable, onContentChange, onMetadataChange, onRemove, onDuplicate }: DraggableBlockProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
+  const style = { transform: CSS.Transform.toString(transform), transition }
+  const borderColor = BLOCK_BORDER_COLOR[block.type] || '#9ca3af'
+  const bgColor = BLOCK_BG[block.type] || 'transparent'
 
   const placeholderMap: Record<string, string> = {
     header: 'Enter paper title, school name, exam details…',
@@ -75,135 +55,68 @@ export default function DraggableBlock({
   }
 
   return (
-    <div
+    <Box
       ref={setNodeRef}
       style={style}
-      className={`relative group border-l-4 rounded-lg border border-gray-200 shadow-sm transition-all ${
-        BLOCK_COLORS[block.type] || 'border-l-gray-400'
-      } ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-primary-300' : ''}`}
+      sx={{
+        position: 'relative',
+        borderLeft: `4px solid ${borderColor}`,
+        border: 1,
+        borderColor: 'grey.200',
+        borderRadius: 2,
+        bgcolor: bgColor,
+        boxShadow: isDragging ? 4 : 1,
+        opacity: isDragging ? 0.5 : 1,
+        transition: 'box-shadow 0.2s, opacity 0.2s',
+        '&:hover .block-actions': { opacity: 1 },
+      }}
     >
-      {/* Block header bar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-white/70 rounded-t-lg border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          {/* Drag handle */}
+      {/* Header bar */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.75, bgcolor: 'rgba(255,255,255,0.7)', borderBottom: 1, borderColor: 'grey.100', borderRadius: '8px 8px 0 0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isEditable && (
-            <button
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 touch-none"
-              title="Drag to reorder"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="5" cy="3" r="1.5" />
-                <circle cx="11" cy="3" r="1.5" />
-                <circle cx="5" cy="8" r="1.5" />
-                <circle cx="11" cy="8" r="1.5" />
-                <circle cx="5" cy="13" r="1.5" />
-                <circle cx="11" cy="13" r="1.5" />
-              </svg>
-            </button>
+            <Tooltip title="Drag to reorder">
+              <IconButton size="small" {...attributes} {...listeners} sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' }, touchAction: 'none', color: 'grey.400', '&:hover': { color: 'grey.600' } }}>
+                <DragIndicatorIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
-
-          {/* Block type label */}
-          <span className="text-xs font-medium text-gray-500">
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
             {BLOCK_ICONS[block.type]} {BLOCK_LABELS[block.type] || block.type}
-          </span>
-
-          {/* Position badge */}
-          <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+          </Typography>
+          <Typography variant="caption" sx={{ px: 0.75, py: 0.25, bgcolor: 'grey.100', borderRadius: 1, fontSize: 10, color: 'text.disabled' }}>
             #{block.position + 1}
-          </span>
-        </div>
+          </Typography>
+        </Box>
 
-        {/* Block actions */}
         {isEditable && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onDuplicate(block.id)}
-              className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 text-xs"
-              title="Duplicate block"
-            >
-              ⧉
-            </button>
-            <button
-              onClick={() => onRemove(block.id)}
-              className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs"
-              title="Remove block"
-            >
-              ✕
-            </button>
-          </div>
+          <Box className="block-actions" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, opacity: 0, transition: 'opacity 0.15s' }}>
+            <Tooltip title="Duplicate"><IconButton size="small" onClick={() => onDuplicate(block.id)} sx={{ color: 'grey.400', '&:hover': { color: 'primary.main', bgcolor: 'rgba(37,99,235,0.08)' } }}><ContentCopyIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+            <Tooltip title="Remove"><IconButton size="small" onClick={() => onRemove(block.id)} sx={{ color: 'grey.400', '&:hover': { color: 'error.main', bgcolor: 'rgba(239,68,68,0.08)' } }}><CloseIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* Block body */}
-      <div className="p-3">
+      <Box sx={{ p: 1.5 }}>
         {/* Question metadata row */}
         {block.type === 'question' && (
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-gray-500">Q#</label>
-              <input
-                type="number"
-                min={1}
-                value={block.metadata?.questionNumber ?? ''}
-                onChange={(e) =>
-                  onMetadataChange(block.id, 'questionNumber', Number(e.target.value))
-                }
-                disabled={!isEditable}
-                className="w-16 rounded border-gray-300 text-sm py-0.5 px-1.5 disabled:bg-gray-100"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-gray-500">Marks</label>
-              <input
-                type="number"
-                min={0}
-                step={0.5}
-                value={block.metadata?.marks ?? ''}
-                onChange={(e) =>
-                  onMetadataChange(block.id, 'marks', Number(e.target.value))
-                }
-                disabled={!isEditable}
-                className="w-20 rounded border-gray-300 text-sm py-0.5 px-1.5 disabled:bg-gray-100"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-gray-500">Type</label>
-              <select
-                value={block.metadata?.questionType ?? 'descriptive'}
-                onChange={(e) =>
-                  onMetadataChange(block.id, 'questionType', e.target.value)
-                }
-                disabled={!isEditable}
-                className="rounded border-gray-300 text-sm py-0.5 px-1.5 disabled:bg-gray-100"
-              >
-                <option value="mcq">MCQ</option>
-                <option value="short_answer">Short Answer</option>
-                <option value="long_answer">Long Answer</option>
-                <option value="descriptive">Descriptive</option>
-                <option value="fill_in_blank">Fill in the Blank</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-gray-500">Section</label>
-              <input
-                type="text"
-                value={block.metadata?.section ?? ''}
-                onChange={(e) =>
-                  onMetadataChange(block.id, 'section', e.target.value)
-                }
-                disabled={!isEditable}
-                placeholder="A"
-                className="w-16 rounded border-gray-300 text-sm py-0.5 px-1.5 disabled:bg-gray-100"
-              />
-            </div>
-          </div>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+            <TextField label="Q#" type="number" size="small" value={block.metadata?.questionNumber ?? ''} onChange={(e) => onMetadataChange(block.id, 'questionNumber', Number(e.target.value))} disabled={!isEditable} sx={{ width: 80 }} slotProps={{ htmlInput: { min: 1 } }} />
+            <TextField label="Marks" type="number" size="small" value={block.metadata?.marks ?? ''} onChange={(e) => onMetadataChange(block.id, 'marks', Number(e.target.value))} disabled={!isEditable} sx={{ width: 90 }} slotProps={{ htmlInput: { min: 0, step: 0.5 } }} />
+            <TextField label="Type" size="small" select value={block.metadata?.questionType ?? 'descriptive'} onChange={(e) => onMetadataChange(block.id, 'questionType', e.target.value)} disabled={!isEditable} sx={{ minWidth: 140 }}>
+              <MenuItem value="mcq">MCQ</MenuItem>
+              <MenuItem value="short_answer">Short Answer</MenuItem>
+              <MenuItem value="long_answer">Long Answer</MenuItem>
+              <MenuItem value="descriptive">Descriptive</MenuItem>
+              <MenuItem value="fill_in_blank">Fill in the Blank</MenuItem>
+            </TextField>
+            <TextField label="Section" size="small" value={block.metadata?.section ?? ''} onChange={(e) => onMetadataChange(block.id, 'section', e.target.value)} disabled={!isEditable} placeholder="A" sx={{ width: 80 }} />
+          </Box>
         )}
 
-        {/* Divider block – just renders a line */}
         {block.type === 'divider' ? (
-          <hr className="border-gray-300 my-2" />
+          <Box component="hr" sx={{ border: 0, borderTop: 1, borderColor: 'grey.300', my: 1 }} />
         ) : (
           <RichTextEditor
             content={block.content}
@@ -213,7 +126,7 @@ export default function DraggableBlock({
             compact={block.type === 'section_title'}
           />
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

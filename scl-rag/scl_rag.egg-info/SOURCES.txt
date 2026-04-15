@@ -7,6 +7,7 @@ app/api/__init__.py
 app/api/routes.py
 app/core/__init__.py
 app/services/__init__.py
+app/services/analytics.py
 app/services/indexing.py
 app/services/query.py
 app/services/vectordb.py
