@@ -3,15 +3,54 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../store/AuthContext'
 import admissionService from '../services/admissionService'
 import type { AdmissionStatus } from '../types'
+import {
+  Box, Typography, Card, CardContent, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Chip, CircularProgress, Button, Paper,
+} from '@mui/material'
+import PeopleIcon from '@mui/icons-material/People'
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
+import CancelIcon from '@mui/icons-material/Cancel'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 
-const statusColors: Record<AdmissionStatus, { bg: string; text: string }> = {
-  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  under_review: { bg: 'bg-blue-100', text: 'text-blue-800' },
-  documents_required: { bg: 'bg-orange-100', text: 'text-orange-800' },
-  approved: { bg: 'bg-green-100', text: 'text-green-800' },
-  rejected: { bg: 'bg-red-100', text: 'text-red-800' },
-  waitlisted: { bg: 'bg-purple-100', text: 'text-purple-800' },
-  admitted: { bg: 'bg-teal-100', text: 'text-teal-800' },
+const statusChipColor: Record<AdmissionStatus, 'default' | 'warning' | 'info' | 'error' | 'success'> = {
+  pending: 'warning',
+  under_review: 'info',
+  documents_required: 'warning',
+  approved: 'success',
+  rejected: 'error',
+  waitlisted: 'default',
+  admitted: 'success',
+}
+
+interface StatCardProps {
+  label: string
+  value: number
+  color: string
+  icon: React.ReactNode
+}
+
+function StatCard({ label, value, color, icon }: StatCardProps) {
+  return (
+    <Card sx={{ flex: 1, minWidth: 160 }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2.5, '&:last-child': { pb: 2.5 } }}>
+        <Box
+          sx={{
+            width: 48, height: 48, borderRadius: 2.5,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: `${color}15`, color,
+          }}
+        >
+          {icon}
+        </Box>
+        <Box>
+          <Typography variant="body2" color="text.secondary">{label}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 700, color }}>{value}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function DashboardPage() {
@@ -33,95 +72,84 @@ export default function DashboardPage() {
     : { total: 0, pending: 0, approved: 0, admitted: 0, rejected: 0 }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back, {user?.name}</p>
-      </div>
+    <Box className="fade-in">
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h1">Dashboard</Typography>
+        <Typography variant="subtitle1" sx={{ mt: 0.5 }}>
+          Welcome back, {user?.name}
+        </Typography>
+      </Box>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        <div className="card">
-          <p className="text-sm text-gray-500">Total Applications</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Pending Review</p>
-          <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Approved</p>
-          <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Admitted</p>
-          <p className="text-3xl font-bold text-teal-600">{stats.admitted}</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-gray-500">Rejected</p>
-          <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
-        </div>
-      </div>
+      {/* Stats */}
+      <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', mb: 4 }}>
+        <StatCard label="Total Applications" value={stats.total} color="#1e293b" icon={<PeopleIcon />} />
+        <StatCard label="Pending Review" value={stats.pending} color="#f59e0b" icon={<HourglassEmptyIcon />} />
+        <StatCard label="Approved" value={stats.approved} color="#10b981" icon={<CheckCircleIcon />} />
+        <StatCard label="Admitted" value={stats.admitted} color="#0891b2" icon={<HowToRegIcon />} />
+        <StatCard label="Rejected" value={stats.rejected} color="#ef4444" icon={<CancelIcon />} />
+      </Box>
 
-      {/* Recent Applications Table */}
-      <div className="card">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Applications</h2>
+      {/* Recent Applications */}
+      <Card>
+        <CardContent>
+          <Typography variant="h3" sx={{ mb: 2 }}>Recent Applications</Typography>
 
-        {isLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-600 mt-4">Loading applications...</p>
-          </div>
-        ) : requests && requests.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">ID</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Student Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Grade</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Submitted</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.slice(0, 10).map((request) => (
-                  <tr key={request.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4 font-mono text-sm">{request.id}</td>
-                    <td className="py-3 px-4">{request.student_name}</td>
-                    <td className="py-3 px-4">{request.grade_applying_for}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          statusColors[request.status].bg
-                        } ${statusColors[request.status].text}`}
-                      >
-                        {request.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-500">
-                      {new Date(request.submitted_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Link
-                        to={`/admission/view/${request.id}`}
-                        className="text-primary-600 hover:text-primary-800 font-medium text-sm"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            No applications found
-          </div>
-        )}
-      </div>
-    </div>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6 }}>
+              <CircularProgress />
+              <Typography color="text.secondary" sx={{ mt: 2 }}>Loading applications...</Typography>
+            </Box>
+          ) : requests && requests.length > 0 ? (
+            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Student Name</TableCell>
+                    <TableCell>Grade</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Submitted</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {requests.slice(0, 10).map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{request.id}</TableCell>
+                      <TableCell>{request.student_name}</TableCell>
+                      <TableCell>{request.grade_applying_for}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={request.status.replace('_', ' ')}
+                          size="small"
+                          color={statusChipColor[request.status] || 'default'}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+                        {new Date(request.submitted_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          component={Link}
+                          to={`/admission/view/${request.id}`}
+                          size="small"
+                          startIcon={<VisibilityIcon />}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Typography color="text.secondary">No applications found</Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   )
 }
