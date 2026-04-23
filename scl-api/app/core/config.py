@@ -17,8 +17,17 @@ class Settings(BaseSettings):
     PORT: int = 4002
     
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./school_mgmt.db"
-    
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:Opentext1!@db.aizsdxmtfvbruahpogfx.supabase.co:5432/postgres"
+
+    # Supabase
+    SUPABASE_URL: str = "https://aizsdxmtfvbruahpogfx.supabase.co"
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""  # Legacy HS256 shared secret (Legacy JWT Secret tab)
+    # JWKS endpoint for verifying ECC P-256 signed JWTs (current Supabase default)
+    # Format: https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
+    SUPABASE_JWKS_URL: str = "https://aizsdxmtfvbruahpogfx.supabase.co/auth/v1/.well-known/jwks.json"
+
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

@@ -1,11 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/AuthContext'
-import {
-  Box, Card, CardContent, Typography, TextField, Button, Alert, Divider, Avatar, Paper,
-} from '@mui/material'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 
 export default function LoginPage() {
   const { login, loginAsGuest, isAuthenticated, isGuest } = useAuth()
@@ -16,7 +11,12 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  if (isAuthenticated || isGuest) {
+  // Redirect if already logged in
+  if (isAuthenticated) {
+    navigate('/dashboard')
+    return null
+  }
+  if (isGuest) {
     navigate('/admission')
     return null
   }
@@ -51,121 +51,98 @@ export default function LoginPage() {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        p: 3,
-      }}
-    >
-      <Box sx={{ width: '100%', maxWidth: 440 }} className="fade-in">
-        {/* Logo */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Avatar
-            sx={{
-              bgcolor: 'primary.main',
-              width: 64,
-              height: 64,
-              mx: 'auto',
-              mb: 2,
-              fontSize: '1.75rem',
-              fontWeight: 700,
-              boxShadow: '0 8px 24px rgb(37 99 235 / 0.3)',
-            }}
-          >
-            S
-          </Avatar>
-          <Typography variant="h2" gutterBottom>
-            School Management System
-          </Typography>
-          <Typography color="text.secondary">
-            Sign in to your account or continue as guest
-          </Typography>
-        </Box>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo and Title */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <span className="text-white font-bold text-3xl">S</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">School Management System</h1>
+          <p className="text-gray-600 mt-2">Sign in to your account or continue as guest</p>
+        </div>
 
-        <Card sx={{ borderRadius: 4 }}>
-          <CardContent sx={{ p: 4 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+        {/* Login Card */}
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
 
-            <form onSubmit={handleLogin}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <TextField
-                  label="Email Address"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@school.local"
-                  required
-                  fullWidth
-                />
-                <TextField
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  fullWidth
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  disabled={isLoading}
-                  startIcon={<LockOutlinedIcon />}
-                  sx={{ py: 1.5 }}
-                >
-                  {isLoading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </Box>
-            </form>
+          {/* Login Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="label">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field"
+                placeholder="admin@school.local"
+                required
+              />
+            </div>
 
-            <Divider sx={{ my: 3 }}>
-              <Typography variant="body2" color="text.secondary">or</Typography>
-            </Divider>
+            <div>
+              <label htmlFor="password" className="label">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
-            <Button
-              variant="outlined"
-              size="large"
-              fullWidth
-              onClick={handleGuestLogin}
+            <button
+              type="submit"
+              className="w-full btn-primary py-3 font-medium"
               disabled={isLoading}
-              startIcon={<PersonOutlinedIcon />}
-              sx={{ py: 1.5 }}
             >
-              Continue as Guest
-            </Button>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-              Guest users can submit admission requests without creating an account
-            </Typography>
-          </CardContent>
-        </Card>
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-500">or</span>
+            </div>
+          </div>
+
+          {/* Guest Login */}
+          <button
+            onClick={handleGuestLogin}
+            className="w-full btn-outline py-3 font-medium"
+            disabled={isLoading}
+          >
+            Continue as Guest
+          </button>
+
+          <p className="text-center text-sm text-gray-500 mt-4">
+            Guest users can submit admission requests without creating an account
+          </p>
+        </div>
 
         {/* Demo Credentials */}
-        <Paper
-          variant="outlined"
-          sx={{ mt: 3, p: 2.5, textAlign: 'center', bgcolor: 'rgba(255,255,255,0.6)', borderRadius: 3 }}
-        >
-          <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-            Demo Credentials
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-            Admin: admin@school.local / admin123
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-            Staff: staff@school.local / staff123
-          </Typography>
-        </Paper>
-      </Box>
-    </Box>
+        <div className="mt-6 p-4 bg-white/50 rounded-lg text-center">
+          <p className="text-sm text-gray-600 font-medium mb-2">Demo Credentials</p>
+          <p className="text-xs text-gray-500">Admin: admin@school.local / admin123</p>
+          <p className="text-xs text-gray-500">Staff: staff@school.local / staff123</p>
+        </div>
+      </div>
+    </div>
   )
 }

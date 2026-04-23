@@ -4,9 +4,30 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from jose import JWTError, jwt
+from jose.backends import ECKey
+import httpx
 import bcrypt
 
 from app.core.config import settings
+
+# Cache JWKS keys in memory to avoid repeated network calls
+_jwks_cache: Optional[dict] = None
+
+
+async def _get_jwks() -> Optional[dict]:
+    """Fetch and cache the Supabase JWKS (public keys for ES256 verification)."""
+    global _jwks_cache
+    if _jwks_cache is not None:
+        return _jwks_cache
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(settings.SUPABASE_JWKS_URL, timeout=5)
+            if resp.status_code == 200:
+                _jwks_cache = resp.json()
+                return _jwks_cache
+    except Exception:
+        pass
+    return None
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -54,9 +75,58 @@ def create_guest_token() -> str:
 
 
 def decode_token(token: str) -> Optional[dict]:
-    """Decode and validate a JWT token."""
+    """Decode and validate a JWT token (local or Supabase-issued, sync path).
+
+    Handles:
+    - Local HS256 guest/legacy tokens (SECRET_KEY)
+    - Supabase legacy HS256 tokens (SUPABASE_JWT_SECRET)
+    Note: ES256 (ECC P-256) verification requires the async path; if this
+    returns None the auth endpoint falls back to the Supabase /user API.
+    """
+    # Try local secret first (for guest tokens)
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
     except JWTError:
-        return None
+        pass
+
+    # Try legacy Supabase HS256 JWT secret
+    if settings.SUPABASE_JWT_SECRET:
+        try:
+            payload = jwt.decode(
+                token,
+                settings.SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+            return payload
+        except JWTError:
+            pass
+
+    return None
+
+
+async def decode_token_async(token: str) -> Optional[dict]:
+    """Decode and validate a JWT token, including ECC P-256 (ES256) Supabase tokens."""
+    # Try sync path first (guest tokens + legacy HS256)
+    result = decode_token(token)
+    if result:
+        return result
+
+    # Try ES256 via JWKS (current Supabase default)
+    jwks = await _get_jwks()
+    if jwks:
+        for key_data in jwks.get("keys", []):
+            try:
+                public_key = ECKey(key_data, algorithm="ES256")
+                payload = jwt.decode(
+                    token,
+                    public_key,
+                    algorithms=["ES256"],
+                    options={"verify_aud": False},
+                )
+                return payload
+            except Exception:
+                continue
+
+    return None

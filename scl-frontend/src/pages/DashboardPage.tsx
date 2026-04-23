@@ -1,60 +1,38 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import {
+  BarChart, Bar,
+  LineChart, Line,
+  PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer,
+} from 'recharts'
 import { useAuth } from '../store/AuthContext'
 import admissionService from '../services/admissionService'
 import type { AdmissionStatus } from '../types'
-import {
-  Box, Typography, Card, CardContent, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Chip, CircularProgress, Button, Paper,
-} from '@mui/material'
-import PeopleIcon from '@mui/icons-material/People'
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import HowToRegIcon from '@mui/icons-material/HowToReg'
-import CancelIcon from '@mui/icons-material/Cancel'
-import VisibilityIcon from '@mui/icons-material/Visibility'
 
-const statusChipColor: Record<AdmissionStatus, 'default' | 'warning' | 'info' | 'error' | 'success'> = {
-  pending: 'warning',
-  under_review: 'info',
-  documents_required: 'warning',
-  approved: 'success',
-  rejected: 'error',
-  waitlisted: 'default',
-  admitted: 'success',
-}
+type ChartType = 'bar' | 'line' | 'pie'
 
-interface StatCardProps {
-  label: string
-  value: number
-  color: string
-  icon: React.ReactNode
-}
+const CHART_COLORS = [
+  '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444',
+  '#8b5cf6', '#ec4899', '#10b981', '#f97316',
+  '#6366f1', '#84cc16',
+]
 
-function StatCard({ label, value, color, icon }: StatCardProps) {
-  return (
-    <Card sx={{ flex: 1, minWidth: 160 }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2.5, '&:last-child': { pb: 2.5 } }}>
-        <Box
-          sx={{
-            width: 48, height: 48, borderRadius: 2.5,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            bgcolor: `${color}15`, color,
-          }}
-        >
-          {icon}
-        </Box>
-        <Box>
-          <Typography variant="body2" color="text.secondary">{label}</Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700, color }}>{value}</Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  )
+const statusColors: Record<AdmissionStatus, { bg: string; text: string }> = {
+  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+  under_review: { bg: 'bg-blue-100', text: 'text-blue-800' },
+  documents_required: { bg: 'bg-orange-100', text: 'text-orange-800' },
+  approved: { bg: 'bg-green-100', text: 'text-green-800' },
+  rejected: { bg: 'bg-red-100', text: 'text-red-800' },
+  waitlisted: { bg: 'bg-purple-100', text: 'text-purple-800' },
+  admitted: { bg: 'bg-teal-100', text: 'text-teal-800' },
 }
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const [chartType, setChartType] = useState<ChartType>('bar')
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['admission-requests'],
@@ -71,85 +49,196 @@ export default function DashboardPage() {
       }
     : { total: 0, pending: 0, approved: 0, admitted: 0, rejected: 0 }
 
+  // Compute students per class from admitted requests
+  const studentsPerClass = requests
+    ? Object.entries(
+        requests
+          .filter((r) => r.status === 'admitted' && r.admitted_class)
+          .reduce<Record<string, number>>((acc, r) => {
+            const cls = r.admitted_class!
+            acc[cls] = (acc[cls] ?? 0) + 1
+            return acc
+          }, {}),
+      )
+        .map(([className, count]) => ({ className, count }))
+        .sort((a, b) => a.className.localeCompare(b.className))
+    : []
+
   return (
-    <Box className="fade-in">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h1">Dashboard</Typography>
-        <Typography variant="subtitle1" sx={{ mt: 0.5 }}>
-          Welcome back, {user?.name}
-        </Typography>
-      </Box>
+    <div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 mt-2">Welcome back, {user?.name}</p>
+      </div>
 
-      {/* Stats */}
-      <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', mb: 4 }}>
-        <StatCard label="Total Applications" value={stats.total} color="#1e293b" icon={<PeopleIcon />} />
-        <StatCard label="Pending Review" value={stats.pending} color="#f59e0b" icon={<HourglassEmptyIcon />} />
-        <StatCard label="Approved" value={stats.approved} color="#10b981" icon={<CheckCircleIcon />} />
-        <StatCard label="Admitted" value={stats.admitted} color="#0891b2" icon={<HowToRegIcon />} />
-        <StatCard label="Rejected" value={stats.rejected} color="#ef4444" icon={<CancelIcon />} />
-      </Box>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="card">
+          <p className="text-sm text-gray-500">Total Applications</p>
+          <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Pending Review</p>
+          <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Approved</p>
+          <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Admitted</p>
+          <p className="text-3xl font-bold text-teal-600">{stats.admitted}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-500">Rejected</p>
+          <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
+        </div>
+      </div>
 
-      {/* Recent Applications */}
-      <Card>
-        <CardContent>
-          <Typography variant="h3" sx={{ mb: 2 }}>Recent Applications</Typography>
+      {/* Students per Class Chart */}
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Students per Class</h2>
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+            {(['bar', 'line', 'pie'] as ChartType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setChartType(type)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${
+                  chartType === type
+                    ? 'bg-white text-primary-700 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {isLoading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6 }}>
-              <CircularProgress />
-              <Typography color="text.secondary" sx={{ mt: 2 }}>Loading applications...</Typography>
-            </Box>
-          ) : requests && requests.length > 0 ? (
-            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Student Name</TableCell>
-                    <TableCell>Grade</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Submitted</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {requests.slice(0, 10).map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{request.id}</TableCell>
-                      <TableCell>{request.student_name}</TableCell>
-                      <TableCell>{request.grade_applying_for}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={request.status.replace('_', ' ')}
-                          size="small"
-                          color={statusChipColor[request.status] || 'default'}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-                        {new Date(request.submitted_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          component={Link}
-                          to={`/admission/view/${request.id}`}
-                          size="small"
-                          startIcon={<VisibilityIcon />}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full"></div>
+          </div>
+        ) : studentsPerClass.length === 0 ? (
+          <div className="flex items-center justify-center h-64 text-gray-400">
+            No admitted students yet
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            {chartType === 'bar' ? (
+              <BarChart data={studentsPerClass} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="className" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(v) => [v, 'Students']} />
+                <Bar dataKey="count" name="Students" radius={[4, 4, 0, 0]}>
+                  {studentsPerClass.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography color="text.secondary">No applications found</Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Box>
+                </Bar>
+              </BarChart>
+            ) : chartType === 'line' ? (
+              <LineChart data={studentsPerClass} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="className" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(v) => [v, 'Students']} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  name="Students"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  dot={{ fill: '#0ea5e9', r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            ) : (
+              <PieChart>
+                <Pie
+                  data={studentsPerClass}
+                  dataKey="count"
+                  nameKey="className"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={110}
+                  label={({ className, percent }) =>
+                    `${className} (${(percent * 100).toFixed(0)}%)`
+                  }
+                >
+                  {studentsPerClass.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => [v, 'Students']} />
+                <Legend />
+              </PieChart>
+            )}
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Recent Applications Table */}
+      <div className="card">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Applications</h2>
+
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading applications...</p>
+          </div>
+        ) : requests && requests.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">ID</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Student Name</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Grade</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Submitted</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.slice(0, 10).map((request) => (
+                  <tr key={request.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-4 font-mono text-sm">{request.id}</td>
+                    <td className="py-3 px-4">{request.student_name}</td>
+                    <td className="py-3 px-4">{request.grade_applying_for}</td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          statusColors[request.status].bg
+                        } ${statusColors[request.status].text}`}
+                      >
+                        {request.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-500">
+                      {new Date(request.submitted_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Link
+                        to={`/admission/view/${request.id}`}
+                        className="text-primary-600 hover:text-primary-800 font-medium text-sm"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            No applications found
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

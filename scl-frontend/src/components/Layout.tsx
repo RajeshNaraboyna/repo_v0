@@ -1,45 +1,22 @@
 import { useState } from 'react'
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/AuthContext'
-import {
-  AppBar, Toolbar, IconButton, Typography, Box, Drawer, List, ListItemButton,
-  ListItemIcon, ListItemText, Avatar, Button, Divider, Tooltip, useMediaQuery,
-  useTheme, Fade,
-} from '@mui/material'
-import MenuIcon from '@mui/icons-material/Menu'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import AssignmentIcon from '@mui/icons-material/Assignment'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import SchoolIcon from '@mui/icons-material/School'
-import DescriptionIcon from '@mui/icons-material/Description'
-import EventNoteIcon from '@mui/icons-material/EventNote'
-import BarChartIcon from '@mui/icons-material/BarChart'
-import InsightsIcon from '@mui/icons-material/Insights'
-import LogoutIcon from '@mui/icons-material/Logout'
-import LoginIcon from '@mui/icons-material/Login'
-
-const DRAWER_WIDTH = 260
-const DRAWER_COLLAPSED = 68
 
 const navItems = [
-  { to: '/admission', label: 'Admission Request', icon: <AssignmentIcon />, authRequired: false },
-  { to: '/dashboard', label: 'Dashboard', icon: <DashboardIcon />, authRequired: true },
-  { to: '/approved', label: 'Approved', icon: <CheckCircleIcon />, authRequired: true },
-  { to: '/students', label: 'Students', icon: <SchoolIcon />, authRequired: true },
-  { to: '/question-papers', label: 'Question Papers', icon: <DescriptionIcon />, authRequired: true },
-  { to: '/exams', label: 'Exams', icon: <EventNoteIcon />, authRequired: true },
-  { to: '/results', label: 'Results', icon: <BarChartIcon />, authRequired: true },
-  { to: '/analytics', label: 'Analytics', icon: <InsightsIcon />, authRequired: true },
+  { to: '/admission', label: 'Admission Request', icon: '📋', authRequired: false },
+  { to: '/dashboard', label: 'Dashboard', icon: '📊', authRequired: true },
+  { to: '/approved', label: 'Approved', icon: '✅', authRequired: true },
+  { to: '/students', label: 'Students', icon: '🎓', authRequired: true },
+  { to: '/question-papers', label: 'Question Papers', icon: '📝', authRequired: true },
+  { to: '/exams', label: 'Exams', icon: '📚', authRequired: true },
+  { to: '/results', label: 'Results', icon: '📊', authRequired: true },
+  { to: '/analytics', label: 'Analytics', icon: '🔍', authRequired: true },
 ]
 
 export default function Layout() {
   const { user, isAuthenticated, isGuest, logout } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
-  const [open, setOpen] = useState(!isMobile)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const handleLogout = () => {
     logout()
@@ -50,203 +27,118 @@ export default function Layout() {
     (item) => !item.authRequired || isAuthenticated
   )
 
-  const drawerWidth = open ? DRAWER_WIDTH : DRAWER_COLLAPSED
-
-  const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Drawer Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5, minHeight: 64 }}>
-        {open && (
-          <Fade in={open}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-              <Avatar
-                sx={{
-                  bgcolor: 'primary.main',
-                  width: 36,
-                  height: 36,
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                }}
-              >
-                S
-              </Avatar>
-              <Typography variant="h6" noWrap sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                School Mgmt
-              </Typography>
-            </Box>
-          </Fade>
-        )}
-        <IconButton onClick={() => setOpen(!open)} size="small">
-          {open ? <ChevronLeftIcon /> : <MenuIcon />}
-        </IconButton>
-      </Box>
-
-      <Divider />
-
-      {/* Navigation List */}
-      <List sx={{ flex: 1, py: 1 }}>
-        {visibleNavItems.map((item) => {
-          const isActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-          return (
-            <Tooltip key={item.to} title={open ? '' : item.label} placement="right" arrow>
-              <ListItemButton
-                component={Link}
-                to={item.to}
-                selected={isActive}
-                onClick={() => isMobile && setOpen(false)}
-                sx={{
-                  minHeight: 44,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: open ? 2 : 1.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: open ? 2 : 'auto',
-                    justifyContent: 'center',
-                    color: isActive ? 'primary.main' : 'text.secondary',
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                {open && (
-                  <ListItemText
-                    primary={item.label}
-                    slotProps={{ primary: { sx: { fontSize: '0.875rem', fontWeight: isActive ? 600 : 500 } } }}
-                  />
-                )}
-              </ListItemButton>
-            </Tooltip>
-          )
-        })}
-      </List>
-
-      <Divider />
-
-      {/* Footer */}
-      <Box sx={{ p: 1.5, textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary">
-          {open ? '© 2026 School Mgmt' : '©'}
-        </Typography>
-      </Box>
-    </Box>
-  )
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Sidebar Drawer */}
-      {isMobile ? (
-        <Drawer
-          variant="temporary"
-          open={open}
-          onClose={() => setOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
-          }}
-        >
-          {drawerContent}
-        </Drawer>
-      ) : (
-        <Drawer
-          variant="permanent"
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              boxSizing: 'border-box',
-              transition: theme.transitions.create('width', {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
-              overflowX: 'hidden',
-            },
-          }}
-        >
-          {drawerContent}
-        </Drawer>
-      )}
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Top Header */}
+      <header className="bg-white shadow-sm border-b z-10">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              {/* Sidebar Toggle */}
+              <button
+                onClick={() => setSidebarOpen((prev) => !prev)}
+                className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
 
-      {/* Main area */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* App Bar */}
-        <AppBar
-          position="sticky"
-          elevation={0}
-          sx={{
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Toolbar sx={{ gap: 2 }}>
-            {isMobile && (
-              <IconButton edge="start" onClick={() => setOpen(true)}>
-                <MenuIcon />
-              </IconButton>
-            )}
-
-            {/* Spacer pushes user info right */}
-            <Box sx={{ flex: 1 }} />
+              {/* Logo */}
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">S</span>
+                </div>
+                <span className="text-xl font-semibold text-gray-900">
+                  School Management
+                </span>
+              </Link>
+            </div>
 
             {/* User Info */}
-            {user ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar
-                  sx={{
-                    width: 34,
-                    height: 34,
-                    bgcolor: 'primary.light',
-                    color: 'primary.dark',
-                    fontSize: '0.875rem',
-                    fontWeight: 700,
-                  }}
+            <div className="flex items-center space-x-3">
+              {user ? (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-semibold">
+                      {(isGuest ? 'G' : user.name?.charAt(0) || 'U').toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {isGuest ? 'Guest' : user.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm text-red-600 hover:text-red-700 font-medium ml-2"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="btn-primary text-sm"
                 >
-                  {(isGuest ? 'G' : user.name?.charAt(0) || 'U').toUpperCase()}
-                </Avatar>
-                <Typography variant="body2" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
-                  {isGuest ? 'Guest' : user.name}
-                </Typography>
-                <Button
-                  size="small"
-                  color="error"
-                  startIcon={<LogoutIcon />}
-                  onClick={handleLogout}
-                  sx={{ ml: 0.5 }}
-                >
-                  Logout
-                </Button>
-              </Box>
-            ) : (
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<LoginIcon />}
-                component={Link}
-                to="/login"
-              >
-                Login
-              </Button>
-            )}
-          </Toolbar>
-        </AppBar>
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
 
-        {/* Page Content */}
-        <Box
-          component="main"
-          sx={{
-            flex: 1,
-            overflowY: 'auto',
-            p: { xs: 2, sm: 3, lg: 4 },
-          }}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar */}
+        <aside
+          className={`bg-white border-r shadow-sm flex flex-col transition-all duration-300 ${
+            sidebarOpen ? 'w-60' : 'w-16'
+          }`}
         >
-          <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+          <nav className="flex-1 py-4 space-y-1 px-2">
+            {visibleNavItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                title={item.label}
+                className={({ isActive }) =>
+                  `flex items-center ${sidebarOpen ? 'space-x-3 px-3' : 'justify-center px-0'} py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`
+                }
+              >
+                <span className="text-lg flex-shrink-0">{item.icon}</span>
+                {sidebarOpen && <span className="whitespace-nowrap overflow-hidden">{item.label}</span>}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* Sidebar Footer */}
+          <div className="border-t px-2 py-3">
+            {sidebarOpen ? (
+              <p className="text-xs text-gray-400 text-center">© 2026 School Mgmt</p>
+            ) : (
+              <p className="text-xs text-gray-400 text-center">©</p>
+            )}
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <div className="max-w-6xl mx-auto">
             <Outlet />
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+          </div>
+        </main>
+      </div>
+    </div>
   )
 }

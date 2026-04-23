@@ -1,15 +1,21 @@
 import { useState, useCallback } from 'react'
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent,
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import DraggableBlock from './DraggableBlock'
 import type { ContentBlock } from '../../types'
-import { Box, Typography, Button, Chip, ToggleButton } from '@mui/material'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import EditIcon from '@mui/icons-material/Edit'
 
 interface QuestionPaperDesignerProps {
   blocks: ContentBlock[]
@@ -24,18 +30,20 @@ function generateBlockId(): string {
 }
 
 const BLOCK_TYPES: { type: ContentBlock['type']; label: string; icon: string }[] = [
-  { type: 'header', label: 'Header', icon: '📄' },
+  { type: 'header', label: 'Paper Header', icon: '📄' },
   { type: 'instructions', label: 'Instructions', icon: '📋' },
-  { type: 'section_title', label: 'Section', icon: '📌' },
+  { type: 'section_title', label: 'Section Title', icon: '📌' },
   { type: 'question', label: 'Question', icon: '❓' },
-  { type: 'text', label: 'Text', icon: '📝' },
+  { type: 'text', label: 'Text Block', icon: '📝' },
   { type: 'image', label: 'Image', icon: '🖼️' },
   { type: 'divider', label: 'Divider', icon: '➖' },
 ]
 
 const DEFAULT_CONTENT: Record<string, string> = {
-  header: '<h2 style="text-align: center">School Name</h2><p style="text-align: center"><strong>Subject — Exam Name</strong></p><p style="text-align: center">Class: __ &nbsp; | &nbsp; Time: __ min &nbsp; | &nbsp; Max Marks: __</p>',
-  instructions: '<p><strong>General Instructions:</strong></p><ol><li>All questions are compulsory.</li><li>Write neat and legible answers.</li><li>Marks are indicated against each question.</li></ol>',
+  header:
+    '<h2 style="text-align: center">School Name</h2><p style="text-align: center"><strong>Subject — Exam Name</strong></p><p style="text-align: center">Class: __ &nbsp; | &nbsp; Time: __ min &nbsp; | &nbsp; Max Marks: __</p>',
+  instructions:
+    '<p><strong>General Instructions:</strong></p><ol><li>All questions are compulsory.</li><li>Write neat and legible answers.</li><li>Marks are indicated against each question.</li></ol>',
   section_title: '<h3>Section A — Objective Questions</h3>',
   question: '<p>Enter your question here.</p>',
   text: '<p></p>',
@@ -43,7 +51,11 @@ const DEFAULT_CONTENT: Record<string, string> = {
   divider: '',
 }
 
-export default function QuestionPaperDesigner({ blocks, onChange, editable = true }: QuestionPaperDesignerProps) {
+export default function QuestionPaperDesigner({
+  blocks,
+  onChange,
+  editable = true,
+}: QuestionPaperDesignerProps) {
   const [previewMode, setPreviewMode] = useState(false)
 
   const sensors = useSensors(
@@ -51,117 +63,212 @@ export default function QuestionPaperDesigner({ blocks, onChange, editable = tru
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = blocks.findIndex((b) => b.id === active.id)
-    const newIndex = blocks.findIndex((b) => b.id === over.id)
-    const reordered = arrayMove(blocks, oldIndex, newIndex).map((b, i) => ({ ...b, position: i }))
-    onChange(reordered)
-  }, [blocks, onChange])
+  // ── Reorder after drag-and-drop ───────────────────────────
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
 
-  const addBlock = useCallback((type: ContentBlock['type']) => {
-    const newBlock: ContentBlock = {
-      id: generateBlockId(), type, content: DEFAULT_CONTENT[type] || '', position: blocks.length,
-      metadata: type === 'question' ? { questionNumber: blocks.filter((b) => b.type === 'question').length + 1, marks: 5, questionType: 'descriptive', section: '' } : undefined,
-    }
-    onChange([...blocks, newBlock])
-  }, [blocks, onChange])
+      const oldIndex = blocks.findIndex((b) => b.id === active.id)
+      const newIndex = blocks.findIndex((b) => b.id === over.id)
+      const reordered = arrayMove(blocks, oldIndex, newIndex).map((b, i) => ({
+        ...b,
+        position: i,
+      }))
+      onChange(reordered)
+    },
+    [blocks, onChange]
+  )
 
-  const updateContent = useCallback((id: string, content: string) => {
-    onChange(blocks.map((b) => (b.id === id ? { ...b, content } : b)))
-  }, [blocks, onChange])
+  // ── Add a new block ───────────────────────────────────────
+  const addBlock = useCallback(
+    (type: ContentBlock['type']) => {
+      const newBlock: ContentBlock = {
+        id: generateBlockId(),
+        type,
+        content: DEFAULT_CONTENT[type] || '',
+        position: blocks.length,
+        metadata:
+          type === 'question'
+            ? {
+                questionNumber: blocks.filter((b) => b.type === 'question').length + 1,
+                marks: 5,
+                questionType: 'descriptive',
+                section: '',
+              }
+            : undefined,
+      }
+      onChange([...blocks, newBlock])
+    },
+    [blocks, onChange]
+  )
 
-  const updateMetadata = useCallback((id: string, field: string, value: unknown) => {
-    onChange(blocks.map((b) => b.id === id ? { ...b, metadata: { ...b.metadata, [field]: value } } : b))
-  }, [blocks, onChange])
+  // ── Update block content ──────────────────────────────────
+  const updateContent = useCallback(
+    (id: string, content: string) => {
+      onChange(blocks.map((b) => (b.id === id ? { ...b, content } : b)))
+    },
+    [blocks, onChange]
+  )
 
-  const removeBlock = useCallback((id: string) => {
-    onChange(blocks.filter((b) => b.id !== id).map((b, i) => ({ ...b, position: i })))
-  }, [blocks, onChange])
+  // ── Update block metadata ─────────────────────────────────
+  const updateMetadata = useCallback(
+    (id: string, field: string, value: unknown) => {
+      onChange(
+        blocks.map((b) =>
+          b.id === id
+            ? { ...b, metadata: { ...b.metadata, [field]: value } }
+            : b
+        )
+      )
+    },
+    [blocks, onChange]
+  )
 
-  const duplicateBlock = useCallback((id: string) => {
-    const idx = blocks.findIndex((b) => b.id === id)
-    if (idx === -1) return
-    const source = blocks[idx]
-    const dup: ContentBlock = { ...source, id: generateBlockId(), metadata: source.metadata ? { ...source.metadata } : undefined }
-    const updated = [...blocks]
-    updated.splice(idx + 1, 0, dup)
-    onChange(updated.map((b, i) => ({ ...b, position: i })))
-  }, [blocks, onChange])
+  // ── Remove block ──────────────────────────────────────────
+  const removeBlock = useCallback(
+    (id: string) => {
+      onChange(
+        blocks
+          .filter((b) => b.id !== id)
+          .map((b, i) => ({ ...b, position: i }))
+      )
+    },
+    [blocks, onChange]
+  )
 
+  // ── Duplicate block ───────────────────────────────────────
+  const duplicateBlock = useCallback(
+    (id: string) => {
+      const idx = blocks.findIndex((b) => b.id === id)
+      if (idx === -1) return
+      const source = blocks[idx]
+      const duplicate: ContentBlock = {
+        ...source,
+        id: generateBlockId(),
+        metadata: source.metadata ? { ...source.metadata } : undefined,
+      }
+      const updated = [...blocks]
+      updated.splice(idx + 1, 0, duplicate)
+      onChange(updated.map((b, i) => ({ ...b, position: i })))
+    },
+    [blocks, onChange]
+  )
+
+  // ── Compute question stats ────────────────────────────────
   const questionBlocks = blocks.filter((b) => b.type === 'question')
-  const totalMarks = questionBlocks.reduce((sum, b) => sum + (Number(b.metadata?.marks) || 0), 0)
+  const totalMarks = questionBlocks.reduce(
+    (sum, b) => sum + (Number(b.metadata?.marks) || 0),
+    0
+  )
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <div className="space-y-4">
       {/* Top controls bar */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, bgcolor: '#fff', borderRadius: 3, boxShadow: 1, border: 1, borderColor: 'grey.100', p: 2 }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mr: 0.5 }}>Add Block:</Typography>
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg shadow-sm border p-4">
+        {/* Add block buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-600 mr-1">Add Block:</span>
           {BLOCK_TYPES.map((bt) => (
-            <Button key={bt.type} size="small" variant="outlined" onClick={() => addBlock(bt.type)} disabled={!editable || previewMode}
-              sx={{ textTransform: 'none', fontSize: 12, px: 1.5, py: 0.5, borderColor: 'grey.300', color: 'text.secondary', '&:hover': { borderColor: 'grey.400', bgcolor: 'grey.50' } }}
+            <button
+              key={bt.type}
+              onClick={() => addBlock(bt.type)}
+              disabled={!editable || previewMode}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {bt.icon} {bt.label}
-            </Button>
+            </button>
           ))}
-        </Box>
+        </div>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="caption" color="text.secondary">
-            {questionBlocks.length} questions · {totalMarks} marks · {blocks.length} blocks
-          </Typography>
-          <ToggleButton value="preview" selected={previewMode} onChange={() => setPreviewMode(!previewMode)} size="small"
-            sx={{ textTransform: 'none', fontSize: 12, px: 1.5 }}
+        {/* Stats + preview toggle */}
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-gray-500">
+            {questionBlocks.length} questions &middot; {totalMarks} marks &middot;{' '}
+            {blocks.length} blocks
+          </span>
+          <button
+            onClick={() => setPreviewMode(!previewMode)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+              previewMode
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
-            {previewMode ? <><EditIcon sx={{ fontSize: 14, mr: 0.5 }} /> Edit</> : <><VisibilityIcon sx={{ fontSize: 14, mr: 0.5 }} /> Preview</>}
-          </ToggleButton>
-        </Box>
-      </Box>
+            {previewMode ? '✏️ Edit Mode' : '👁️ Preview'}
+          </button>
+        </div>
+      </div>
 
-      {/* Block list */}
+      {/* Block list – drag-and-drop zone */}
       {blocks.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8, bgcolor: '#fff', borderRadius: 3, border: '2px dashed', borderColor: 'grey.300' }}>
-          <Typography color="text.disabled" variant="h6" sx={{ mb: 1 }}>No content blocks yet</Typography>
-          <Typography color="text.disabled" variant="body2">Use the "Add Block" buttons above to start designing.</Typography>
-        </Box>
+        <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300">
+          <p className="text-gray-400 text-lg mb-2">No content blocks yet</p>
+          <p className="text-gray-400 text-sm">
+            Use the &ldquo;Add Block&rdquo; buttons above to start designing the question paper.
+          </p>
+        </div>
       ) : previewMode ? (
-        /* Preview mode */
-        <Box sx={{ bgcolor: '#fff', borderRadius: 3, boxShadow: 1, border: 1, borderColor: 'grey.100', p: 4, maxWidth: 800, mx: 'auto' }}>
+        /* ── Preview mode ── */
+        <div className="bg-white rounded-lg shadow-sm border p-8 space-y-4 max-w-3xl mx-auto print:shadow-none print:border-none">
           {blocks.map((block) => (
-            <Box key={block.id} sx={{ mb: 2 }}>
+            <div key={block.id}>
               {block.type === 'divider' ? (
-                <Box component="hr" sx={{ border: 0, borderTop: 1, borderColor: 'grey.300', my: 2 }} />
+                <hr className="border-gray-300 my-4" />
               ) : block.type === 'question' ? (
-                <Box sx={{ mb: 1.5 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                    <Typography variant="body2" color="text.primary" sx={{ fontWeight: 700 }}>
+                <div className="mb-3">
+                  <div className="flex justify-between items-start text-sm mb-1">
+                    <span className="font-semibold text-gray-700">
                       Q{block.metadata?.questionNumber || '?'}.
-                      {block.metadata?.section ? ` [Section ${block.metadata.section}]` : ''}
-                    </Typography>
-                    <Chip label={`${block.metadata?.marks ?? 0} marks`} size="small" variant="outlined" />
-                  </Box>
-                  <Box dangerouslySetInnerHTML={{ __html: block.content }} sx={{ fontSize: 14, lineHeight: 1.7, color: 'text.primary' }} />
-                </Box>
+                      {block.metadata?.section
+                        ? ` [Section ${block.metadata.section}]`
+                        : ''}
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      [{block.metadata?.marks ?? 0} marks]
+                    </span>
+                  </div>
+                  <div
+                    className="prose prose-sm max-w-none text-gray-800"
+                    dangerouslySetInnerHTML={{ __html: block.content }}
+                  />
+                </div>
               ) : (
-                <Box dangerouslySetInnerHTML={{ __html: block.content }} sx={{ fontSize: 14, lineHeight: 1.7, color: 'text.primary' }} />
+                <div
+                  className="prose prose-sm max-w-none text-gray-800"
+                  dangerouslySetInnerHTML={{ __html: block.content }}
+                />
               )}
-            </Box>
+            </div>
           ))}
-        </Box>
+        </div>
       ) : (
-        /* Edit mode with drag-and-drop */
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        /* ── Edit mode with drag-and-drop ── */
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={blocks.map((b) => b.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
               {blocks.map((block) => (
-                <DraggableBlock key={block.id} block={block} isEditable={editable} onContentChange={updateContent} onMetadataChange={updateMetadata} onRemove={removeBlock} onDuplicate={duplicateBlock} />
+                <DraggableBlock
+                  key={block.id}
+                  block={block}
+                  isEditable={editable}
+                  onContentChange={updateContent}
+                  onMetadataChange={updateMetadata}
+                  onRemove={removeBlock}
+                  onDuplicate={duplicateBlock}
+                />
               ))}
-            </Box>
+            </div>
           </SortableContext>
         </DndContext>
       )}
-    </Box>
+    </div>
   )
 }
