@@ -1,22 +1,25 @@
 import { useState } from 'react'
 import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../store/AuthContext'
-
-const navItems = [
-  { to: '/admission', label: 'Admission Request', icon: '📋', authRequired: false },
-  { to: '/dashboard', label: 'Dashboard', icon: '📊', authRequired: true },
-  { to: '/approved', label: 'Approved', icon: '✅', authRequired: true },
-  { to: '/students', label: 'Students', icon: '🎓', authRequired: true },
-  { to: '/question-papers', label: 'Question Papers', icon: '📝', authRequired: true },
-  { to: '/exams', label: 'Exams', icon: '📚', authRequired: true },
-  { to: '/results', label: 'Results', icon: '📊', authRequired: true },
-  { to: '/analytics', label: 'Analytics', icon: '🔍', authRequired: true },
-]
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Layout() {
   const { user, isAuthenticated, isGuest, logout } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const navItems = [
+    { to: '/admission', label: t('nav.admissionRequest'), icon: '📋', authRequired: false },
+    { to: '/dashboard', label: t('nav.dashboard'), icon: '📊', authRequired: true },
+    { to: '/approved', label: t('nav.approved'), icon: '✅', authRequired: true },
+    { to: '/students', label: t('nav.students'), icon: '🎓', authRequired: true },
+    { to: '/question-papers', label: t('nav.questionPapers'), icon: '📝', authRequired: true },
+    { to: '/exams', label: t('nav.exams'), icon: '📚', authRequired: true },
+    { to: '/results', label: t('nav.results'), icon: '📊', authRequired: true },
+    { to: '/analytics', label: t('nav.analytics'), icon: '🔍', authRequired: true },
+  ]
 
   const handleLogout = () => {
     logout()
@@ -58,13 +61,14 @@ export default function Layout() {
                   <span className="text-white font-bold text-xl">S</span>
                 </div>
                 <span className="text-xl font-semibold text-gray-900">
-                  School Management
+                  {t('nav.schoolManagement')}
                 </span>
               </Link>
             </div>
 
             {/* User Info */}
             <div className="flex items-center space-x-3">
+              <LanguageSwitcher />
               {user ? (
                 <>
                   <div className="flex items-center space-x-2">
@@ -72,14 +76,14 @@ export default function Layout() {
                       {(isGuest ? 'G' : user.name?.charAt(0) || 'U').toUpperCase()}
                     </div>
                     <span className="text-sm font-medium text-gray-700">
-                      {isGuest ? 'Guest' : user.name}
+                      {isGuest ? t('nav.guest') : user.name}
                     </span>
                   </div>
                   <button
                     onClick={handleLogout}
                     className="text-sm text-red-600 hover:text-red-700 font-medium ml-2"
                   >
-                    Logout
+                    {t('nav.logout')}
                   </button>
                 </>
               ) : (
@@ -87,7 +91,7 @@ export default function Layout() {
                   to="/login"
                   className="btn-primary text-sm"
                 >
-                  Login
+                  {t('nav.login')}
                 </Link>
               )}
             </div>
@@ -125,7 +129,7 @@ export default function Layout() {
           {/* Sidebar Footer */}
           <div className="border-t px-2 py-3">
             {sidebarOpen ? (
-              <p className="text-xs text-gray-400 text-center">© 2026 School Mgmt</p>
+              <p className="text-xs text-gray-400 text-center">{t('nav.copyright')}</p>
             ) : (
               <p className="text-xs text-gray-400 text-center">©</p>
             )}

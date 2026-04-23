@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import admissionService from '../services/admissionService'
 import { useSchoolConfig } from '../hooks/useSchoolConfig'
 import type { AdmissionRequestResponse, ClassAdmitRequest } from '../types'
@@ -14,6 +15,7 @@ interface AdmitModalProps {
 
 function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalProps) {
   const { grades, sections } = useSchoolConfig()
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<ClassAdmitRequest>({
     admitted_class: application.grade_applying_for,
     admitted_section: 'A',
@@ -29,16 +31,16 @@ function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalPro
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Admit Student to Class</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('approved.admitStudentToClass')}</h3>
           <p className="text-sm text-gray-600 mt-1">
-            Admitting: <span className="font-medium">{application.student_name}</span>
+            {t('approved.admitting_label')} <span className="font-medium">{application.student_name}</span>
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Class <span className="text-red-500">*</span>
+              {t('approved.classLabel')} <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.admitted_class}
@@ -56,7 +58,7 @@ function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalPro
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Section <span className="text-red-500">*</span>
+              {t('approved.sectionLabel')} <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.admitted_section}
@@ -66,7 +68,7 @@ function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalPro
             >
               {sections.map((section) => (
                 <option key={section} value={section}>
-                  Section {section}
+                  {t('approved.section')} {section}
                 </option>
               ))}
             </select>
@@ -74,7 +76,7 @@ function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalPro
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Roll Number <span className="text-gray-400">(optional)</span>
+              {t('approved.rollNumber')} <span className="text-gray-400">{t('approved.rollNumberOptional')}</span>
             </label>
             <input
               type="text"
@@ -99,7 +101,7 @@ function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalPro
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
               disabled={isLoading}
             >
-              {isLoading ? 'Admitting...' : 'Admit to Class'}
+              {isLoading ? t('approved.admitting') : t('approved.admitToClass')}
             </button>
           </div>
         </form>
@@ -110,6 +112,7 @@ function AdmitModal({ application, onClose, onSubmit, isLoading }: AdmitModalPro
 
 export default function ApprovedApplicationsPage() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [selectedApplication, setSelectedApplication] = useState<AdmissionRequestResponse | null>(null)
 
   const { data: applications, isLoading } = useQuery({
@@ -136,9 +139,9 @@ export default function ApprovedApplicationsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Approved Applications</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('approved.title')}</h1>
         <p className="text-gray-600 mt-2">
-          Admit approved students to their respective classes
+          {t('approved.subtitle')}
         </p>
       </div>
 
@@ -146,7 +149,7 @@ export default function ApprovedApplicationsPage() {
       <div className="card mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">Pending Class Admission</p>
+            <p className="text-sm text-gray-500">{t('approved.pendingClassAdmission')}</p>
             <p className="text-2xl font-bold text-green-600">
               {applications?.length || 0}
             </p>
@@ -162,27 +165,27 @@ export default function ApprovedApplicationsPage() {
       {/* Applications Table */}
       <div className="card">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Approved Students Awaiting Class Assignment
+          {t('approved.awaitingAssignment')}
         </h2>
 
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-600 mt-4">Loading applications...</p>
+            <p className="text-gray-600 mt-4">{t('approved.loading')}</p>
           </div>
         ) : applications && applications.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">ID</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Student Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Grade Applying</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Academic Year</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Guardian</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Contact</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Approved On</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.id')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.studentName')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.gradeApplying')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.academicYear')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.guardian')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.contact')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.approvedOn')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('approved.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,13 +212,13 @@ export default function ApprovedApplicationsPage() {
                           onClick={() => setSelectedApplication(application)}
                           className="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
                         >
-                          Admit to Class
+                          {t('approved.admitToClass')}
                         </button>
                         <Link
                           to={`/admission/view/${application.id}`}
                           className="px-3 py-1 text-primary-600 border border-primary-600 text-sm rounded-lg hover:bg-primary-50"
                         >
-                          View
+                          {t('approved.viewDetails')}
                         </Link>
                       </div>
                     </td>
@@ -229,7 +232,7 @@ export default function ApprovedApplicationsPage() {
             <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-lg font-medium">No approved applications</p>
+            <p className="text-lg font-medium">{t('approved.noApprovedApplications')}</p>
             <p className="mt-1">All approved students have been admitted to classes</p>
           </div>
         )}

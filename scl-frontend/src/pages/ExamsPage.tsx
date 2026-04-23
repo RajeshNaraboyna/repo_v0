@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import examService from '../services/examService'
 import type { ExamEventListResponse, ExamEventStatus } from '../types'
 
@@ -29,6 +30,7 @@ const EXAM_TYPE_LABELS: Record<string, string> = {
 export default function ExamsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [yearFilter, setYearFilter] = useState<string>('')
@@ -64,7 +66,7 @@ export default function ExamsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exams</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('exams.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
             Create exam events, attach paper sets, and randomly select papers
           </p>
@@ -112,7 +114,7 @@ export default function ExamsPage() {
 
       {/* Loading / Error */}
       {isLoading && (
-        <div className="text-center py-12 text-gray-500">Loading exams…</div>
+        <div className="text-center py-12 text-gray-500">{t('exams.loading')}</div>
       )}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
@@ -131,14 +133,14 @@ export default function ExamsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selection Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.name')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.type')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.academicYear')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.examDate')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.paperSelectionDate')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.classes')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.status')}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('exams.actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -173,14 +175,14 @@ export default function ExamsPage() {
                         onClick={() => navigate(`/exams/${exam.id}`)}
                         className="text-primary-600 hover:text-primary-800"
                       >
-                        View
+                        {t('exams.view')}
                       </button>
                       {exam.status === 'draft' && (
                         <button
                           onClick={() => handleDelete(exam)}
                           className="text-red-600 hover:text-red-800 ml-2"
                         >
-                          Delete
+                          {t('exams.delete')}
                         </button>
                       )}
                     </td>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import admissionService from '../services/admissionService'
 import type { AdmissionRequestResponse } from '../types'
 
@@ -10,12 +11,13 @@ interface StudentDetailModalProps {
 }
 
 function StudentDetailModal({ student, onClose }: StudentDetailModalProps) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
         <div className="px-6 py-4 border-b sticky top-0 bg-white">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Student Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('students.viewDetails')}</h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
@@ -30,44 +32,44 @@ function StudentDetailModal({ student, onClose }: StudentDetailModalProps) {
         <div className="px-6 py-4 space-y-6">
           {/* Class Information */}
           <div className="bg-teal-50 rounded-lg p-4">
-            <h4 className="font-medium text-teal-800 mb-3">Class Information</h4>
+            <h4 className="font-medium text-teal-800 mb-3">{t('students.classInfo')}</h4>
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Class:</span>
+                <span className="text-gray-500">{t('students.class')}</span>
                 <p className="font-medium">{student.admitted_class}</p>
               </div>
               <div>
-                <span className="text-gray-500">Section:</span>
+                <span className="text-gray-500">{t('students.section')}</span>
                 <p className="font-medium">{student.admitted_section}</p>
               </div>
               <div>
-                <span className="text-gray-500">Roll Number:</span>
-                <p className="font-medium">{student.roll_number || 'Not assigned'}</p>
+                <span className="text-gray-500">{t('students.rollNumber')}</span>
+                <p className="font-medium">{student.roll_number || t('students.notAssigned')}</p>
               </div>
             </div>
             <div className="mt-3 text-sm text-gray-500">
-              Admitted on: {student.admitted_at ? new Date(student.admitted_at).toLocaleDateString() : 'N/A'}
+            {t('students.admittedOn')} {student.admitted_at ? new Date(student.admitted_at).toLocaleDateString() : t('students.na')}
             </div>
           </div>
 
           {/* Student Information */}
           <div>
-            <h4 className="font-medium text-gray-800 mb-3">Student Information</h4>
+            <h4 className="font-medium text-gray-800 mb-3">{t('students.studentInformation')}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Full Name:</span>
+                <span className="text-gray-500">{t('students.fullName')}</span>
                 <p className="font-medium">{student.student_name}</p>
               </div>
               <div>
-                <span className="text-gray-500">Date of Birth:</span>
+                <span className="text-gray-500">{t('students.dateOfBirth')}</span>
                 <p className="font-medium">{new Date(student.date_of_birth).toLocaleDateString()}</p>
               </div>
               <div>
-                <span className="text-gray-500">Gender:</span>
+                <span className="text-gray-500">{t('students.gender')}</span>
                 <p className="font-medium capitalize">{student.gender}</p>
               </div>
               <div>
-                <span className="text-gray-500">Academic Year:</span>
+                <span className="text-gray-500">{t('students.academicYear')}</span>
                 <p className="font-medium">{student.academic_year}</p>
               </div>
             </div>
@@ -75,18 +77,18 @@ function StudentDetailModal({ student, onClose }: StudentDetailModalProps) {
 
           {/* Contact Information */}
           <div>
-            <h4 className="font-medium text-gray-800 mb-3">Contact Information</h4>
+            <h4 className="font-medium text-gray-800 mb-3">{t('students.contactInformation')}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Phone:</span>
+                <span className="text-gray-500">{t('students.phone')}</span>
                 <p className="font-medium">{student.contact_phone}</p>
               </div>
               <div>
-                <span className="text-gray-500">Email:</span>
+                <span className="text-gray-500">{t('students.email')}</span>
                 <p className="font-medium">{student.contact_email}</p>
               </div>
               <div className="col-span-2">
-                <span className="text-gray-500">City, State:</span>
+                <span className="text-gray-500">{t('students.cityState')}</span>
                 <p className="font-medium">{student.city}, {student.state}</p>
               </div>
             </div>
@@ -190,6 +192,7 @@ export default function CurrentStudentsPage() {
   const [filterSection, setFilterSection] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<AdmissionRequestResponse | null>(null)
+  const { t } = useTranslation()
 
   const queryClient = useQueryClient()
 
@@ -232,9 +235,9 @@ export default function CurrentStudentsPage() {
     <div>
       <div className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Current Students</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('students.title')}</h1>
           <p className="text-gray-600 mt-2">
-            View all students admitted to classes
+            {t('students.subtitle')}
           </p>
         </div>
         <Link
@@ -244,7 +247,7 @@ export default function CurrentStudentsPage() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span>Add Student</span>
+          <span>{t('students.addStudent')}</span>
         </Link>
       </div>
 
@@ -328,7 +331,7 @@ export default function CurrentStudentsPage() {
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
-            <p className="text-gray-600 mt-4">Loading students...</p>
+            <p className="text-gray-600 mt-4">{t('students.loading')}</p>
           </div>
         ) : filteredStudents && filteredStudents.length > 0 ? (
           <div className="overflow-x-auto">
