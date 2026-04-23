@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import admissionService from '../services/admissionService'
 import { useSchoolConfig } from '../hooks/useSchoolConfig'
 import type { AdmissionRequestForm } from '../types'
@@ -11,6 +12,7 @@ const relationships = ['Father', 'Mother', 'Guardian', 'Other']
 export default function AdmissionRequestPage() {
   const navigate = useNavigate()
   const { grades } = useSchoolConfig()
+  const { t } = useTranslation()
   const [step, setStep] = useState(1)
   const [submittedId, setSubmittedId] = useState<string | null>(null)
 
@@ -66,18 +68,18 @@ export default function AdmissionRequestPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('admission.success.heading')}</h2>
           <p className="text-gray-600 mb-6">
-            Your admission request has been submitted successfully.
+            {t('admission.success.message')}
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-500 mb-1">Your Application ID</p>
+            <p className="text-sm text-gray-500 mb-1">{t('admission.success.applicationIdLabel')}</p>
             <p className="text-2xl font-mono font-bold text-primary-600">{submittedId}</p>
           </div>
           
           <p className="text-sm text-gray-500 mb-6">
-            Please save this ID to check your application status later.
+            {t('admission.success.saveIdMessage')}
           </p>
           
           <div className="flex justify-center space-x-4">
@@ -85,7 +87,7 @@ export default function AdmissionRequestPage() {
               onClick={() => navigate(`/admission/status/${submittedId}`)}
               className="btn-primary"
             >
-              Check Status
+              {t('admission.buttons.checkStatus')}
             </button>
             <button
               onClick={() => {
@@ -94,7 +96,7 @@ export default function AdmissionRequestPage() {
               }}
               className="btn-outline"
             >
-              Submit Another
+              {t('admission.buttons.submitAnother')}
             </button>
           </div>
         </div>
@@ -105,14 +107,19 @@ export default function AdmissionRequestPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Student Admission Request</h1>
-        <p className="text-gray-600 mt-2">Fill out the form below to submit an admission request</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('admission.title')}</h1>
+        <p className="text-gray-600 mt-2">{t('admission.subtitle')}</p>
       </div>
 
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          {['Student Info', 'Contact Details', 'Guardian Info', 'Review'].map((label, index) => (
+          {([
+            t('admission.steps.studentInfo'),
+            t('admission.steps.contactDetails'),
+            t('admission.steps.guardianInfo'),
+            t('admission.steps.review'),
+          ]).map((label, index) => (
             <div key={label} className="flex items-center">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
@@ -141,45 +148,45 @@ export default function AdmissionRequestPage() {
           {/* Step 1: Student Information */}
           {step === 1 && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Student Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('admission.studentInfo.heading')}</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="label">Student Name *</label>
+                  <label className="label">{t('admission.studentInfo.studentName')}</label>
                   <input
-                    {...register('student_name', { required: 'Student name is required' })}
+                    {...register('student_name', { required: t('admission.errors.studentNameRequired') })}
                     className={`input-field ${errors.student_name ? 'input-error' : ''}`}
-                    placeholder="Full name of the student"
+                    placeholder={t('admission.studentInfo.studentNamePlaceholder')}
                   />
                   {errors.student_name && <p className="error-text">{errors.student_name.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">Date of Birth *</label>
+                  <label className="label">{t('admission.studentInfo.dateOfBirth')}</label>
                   <input
                     type="date"
-                    {...register('date_of_birth', { required: 'Date of birth is required' })}
+                    {...register('date_of_birth', { required: t('admission.errors.dateOfBirthRequired') })}
                     className={`input-field ${errors.date_of_birth ? 'input-error' : ''}`}
                   />
                   {errors.date_of_birth && <p className="error-text">{errors.date_of_birth.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">Gender *</label>
+                  <label className="label">{t('admission.studentInfo.gender')}</label>
                   <select
-                    {...register('gender', { required: 'Gender is required' })}
+                    {...register('gender', { required: t('admission.errors.genderRequired') })}
                     className={`input-field ${errors.gender ? 'input-error' : ''}`}
                   >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="">{t('admission.studentInfo.selectGender')}</option>
+                    <option value="male">{t('admission.studentInfo.male')}</option>
+                    <option value="female">{t('admission.studentInfo.female')}</option>
+                    <option value="other">{t('admission.studentInfo.other')}</option>
                   </select>
                   {errors.gender && <p className="error-text">{errors.gender.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">Nationality</label>
+                  <label className="label">{t('admission.studentInfo.nationality')}</label>
                   <input
                     {...register('nationality')}
                     className="input-field"
@@ -188,12 +195,12 @@ export default function AdmissionRequestPage() {
                 </div>
 
                 <div>
-                  <label className="label">Grade Applying For *</label>
+                  <label className="label">{t('admission.studentInfo.gradeApplyingFor')}</label>
                   <select
-                    {...register('grade_applying_for', { required: 'Grade is required' })}
+                    {...register('grade_applying_for', { required: t('admission.errors.gradeRequired') })}
                     className={`input-field ${errors.grade_applying_for ? 'input-error' : ''}`}
                   >
-                    <option value="">Select grade</option>
+                    <option value="">{t('admission.studentInfo.selectGrade')}</option>
                     {grades.map((grade) => (
                       <option key={grade} value={grade}>{grade}</option>
                     ))}
@@ -202,9 +209,9 @@ export default function AdmissionRequestPage() {
                 </div>
 
                 <div>
-                  <label className="label">Academic Year *</label>
+                  <label className="label">{t('admission.studentInfo.academicYear')}</label>
                   <select
-                    {...register('academic_year', { required: 'Academic year is required' })}
+                    {...register('academic_year', { required: t('admission.errors.academicYearRequired') })}
                     className={`input-field ${errors.academic_year ? 'input-error' : ''}`}
                   >
                     <option value="2026-2027">2026-2027</option>
@@ -214,108 +221,107 @@ export default function AdmissionRequestPage() {
                 </div>
 
                 <div>
-                  <label className="label">Religion</label>
+                  <label className="label">{t('admission.studentInfo.religion')}</label>
                   <input
                     {...register('religion')}
                     className="input-field"
-                    placeholder="Optional"
+                    placeholder={t('admission.studentInfo.optional')}
                   />
                 </div>
 
                 <div>
-                  <label className="label">Mother Tongue</label>
+                  <label className="label">{t('admission.studentInfo.motherTongue')}</label>
                   <input
                     {...register('mother_tongue')}
                     className="input-field"
-                    placeholder="Optional"
+                    placeholder={t('admission.studentInfo.optional')}
                   />
                 </div>
               </div>
             </div>
           )}
-
           {/* Step 2: Contact Details */}
           {step === 2 && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Details</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('admission.contactDetails.heading')}</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="label">Contact Phone *</label>
+                  <label className="label">{t('admission.contactDetails.contactPhone')}</label>
                   <input
                     {...register('contact_phone', { 
-                      required: 'Phone number is required',
+                      required: t('admission.errors.phoneRequired'),
                       pattern: {
                         value: /^[0-9]{10}$/,
-                        message: 'Please enter a valid 10-digit phone number'
+                        message: t('admission.errors.phoneInvalid'),
                       }
                     })}
                     className={`input-field ${errors.contact_phone ? 'input-error' : ''}`}
-                    placeholder="10-digit mobile number"
+                    placeholder={t('admission.contactDetails.contactPhonePlaceholder')}
                   />
                   {errors.contact_phone && <p className="error-text">{errors.contact_phone.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">Contact Email *</label>
+                  <label className="label">{t('admission.contactDetails.contactEmail')}</label>
                   <input
                     type="email"
                     {...register('contact_email', { 
-                      required: 'Email is required',
+                      required: t('admission.errors.emailRequired'),
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: 'Invalid email address'
+                        message: t('admission.errors.emailInvalid'),
                       }
                     })}
                     className={`input-field ${errors.contact_email ? 'input-error' : ''}`}
-                    placeholder="your@email.com"
+                    placeholder={t('admission.contactDetails.contactEmailPlaceholder')}
                   />
                   {errors.contact_email && <p className="error-text">{errors.contact_email.message}</p>}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="label">Residential Address *</label>
+                  <label className="label">{t('admission.contactDetails.residentialAddress')}</label>
                   <textarea
-                    {...register('residential_address', { required: 'Address is required' })}
+                    {...register('residential_address', { required: t('admission.errors.addressRequired') })}
                     className={`input-field ${errors.residential_address ? 'input-error' : ''}`}
                     rows={3}
-                    placeholder="Full residential address"
+                    placeholder={t('admission.contactDetails.residentialAddressPlaceholder')}
                   />
                   {errors.residential_address && <p className="error-text">{errors.residential_address.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">City *</label>
+                  <label className="label">{t('admission.contactDetails.city')}</label>
                   <input
-                    {...register('city', { required: 'City is required' })}
+                    {...register('city', { required: t('admission.errors.cityRequired') })}
                     className={`input-field ${errors.city ? 'input-error' : ''}`}
-                    placeholder="City"
+                    placeholder={t('admission.contactDetails.cityPlaceholder')}
                   />
                   {errors.city && <p className="error-text">{errors.city.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">State *</label>
+                  <label className="label">{t('admission.contactDetails.state')}</label>
                   <input
-                    {...register('state', { required: 'State is required' })}
+                    {...register('state', { required: t('admission.errors.stateRequired') })}
                     className={`input-field ${errors.state ? 'input-error' : ''}`}
-                    placeholder="State"
+                    placeholder={t('admission.contactDetails.statePlaceholder')}
                   />
                   {errors.state && <p className="error-text">{errors.state.message}</p>}
                 </div>
 
                 <div>
-                  <label className="label">Pincode *</label>
+                  <label className="label">{t('admission.contactDetails.pincode')}</label>
                   <input
                     {...register('pincode', { 
-                      required: 'Pincode is required',
+                      required: t('admission.errors.pincodeRequired'),
                       pattern: {
                         value: /^[0-9]{6}$/,
-                        message: 'Please enter a valid 6-digit pincode'
+                        message: t('admission.errors.pincodeInvalid'),
                       }
                     })}
                     className={`input-field ${errors.pincode ? 'input-error' : ''}`}
-                    placeholder="6-digit pincode"
+                    placeholder={t('admission.contactDetails.pincodePlaceholder')}
                   />
                   {errors.pincode && <p className="error-text">{errors.pincode.message}</p>}
                 </div>
@@ -326,27 +332,27 @@ export default function AdmissionRequestPage() {
           {/* Step 3: Guardian Information */}
           {step === 3 && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Parent/Guardian Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('admission.guardianInfo.heading')}</h2>
               
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-medium text-gray-900 mb-4">Primary Guardian *</h3>
+                <h3 className="font-medium text-gray-900 mb-4">{t('admission.guardianInfo.primaryGuardian')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Name *</label>
+                    <label className="label">{t('admission.guardianInfo.name')}</label>
                     <input
-                      {...register('primary_guardian.name', { required: 'Guardian name is required' })}
+                      {...register('primary_guardian.name', { required: t('admission.errors.guardianNameRequired') })}
                       className={`input-field ${errors.primary_guardian?.name ? 'input-error' : ''}`}
-                      placeholder="Full name"
+                      placeholder={t('admission.guardianInfo.namePlaceholder')}
                     />
                     {errors.primary_guardian?.name && <p className="error-text">{errors.primary_guardian.name.message}</p>}
                   </div>
                   <div>
-                    <label className="label">Relationship *</label>
+                    <label className="label">{t('admission.guardianInfo.relationship')}</label>
                     <select
-                      {...register('primary_guardian.relationship', { required: 'Relationship is required' })}
+                      {...register('primary_guardian.relationship', { required: t('admission.errors.guardianRelationshipRequired') })}
                       className={`input-field ${errors.primary_guardian?.relationship ? 'input-error' : ''}`}
                     >
-                      <option value="">Select relationship</option>
+                      <option value="">{t('admission.guardianInfo.selectRelationship')}</option>
                       {relationships.map((rel) => (
                         <option key={rel} value={rel}>{rel}</option>
                       ))}
@@ -354,29 +360,29 @@ export default function AdmissionRequestPage() {
                     {errors.primary_guardian?.relationship && <p className="error-text">{errors.primary_guardian.relationship.message}</p>}
                   </div>
                   <div>
-                    <label className="label">Phone *</label>
+                    <label className="label">{t('admission.guardianInfo.phone')}</label>
                     <input
-                      {...register('primary_guardian.phone', { required: 'Phone number is required' })}
+                      {...register('primary_guardian.phone', { required: t('admission.errors.guardianPhoneRequired') })}
                       className={`input-field ${errors.primary_guardian?.phone ? 'input-error' : ''}`}
-                      placeholder="Phone number"
+                      placeholder={t('admission.guardianInfo.phonePlaceholder')}
                     />
                     {errors.primary_guardian?.phone && <p className="error-text">{errors.primary_guardian.phone.message}</p>}
                   </div>
                   <div>
-                    <label className="label">Email</label>
+                    <label className="label">{t('admission.guardianInfo.email')}</label>
                     <input
                       type="email"
                       {...register('primary_guardian.email')}
                       className="input-field"
-                      placeholder="Email (optional)"
+                      placeholder={t('admission.guardianInfo.emailPlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="label">Occupation</label>
+                    <label className="label">{t('admission.guardianInfo.occupation')}</label>
                     <input
                       {...register('primary_guardian.occupation')}
                       className="input-field"
-                      placeholder="Occupation (optional)"
+                      placeholder={t('admission.guardianInfo.occupationPlaceholder')}
                     />
                   </div>
                 </div>
@@ -385,20 +391,20 @@ export default function AdmissionRequestPage() {
               {/* Additional Information */}
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="label">Medical Conditions</label>
+                  <label className="label">{t('admission.guardianInfo.medicalConditions')}</label>
                   <textarea
                     {...register('medical_conditions')}
                     className="input-field"
                     rows={2}
-                    placeholder="Any medical conditions we should be aware of (optional)"
+                    placeholder={t('admission.guardianInfo.medicalConditionsPlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="label">How did you hear about us?</label>
+                  <label className="label">{t('admission.guardianInfo.howDidYouHear')}</label>
                   <input
                     {...register('how_did_you_hear')}
                     className="input-field"
-                    placeholder="Referral, website, newspaper, etc."
+                    placeholder={t('admission.guardianInfo.howDidYouHearPlaceholder')}
                   />
                 </div>
               </div>
@@ -408,11 +414,11 @@ export default function AdmissionRequestPage() {
                 <div className="flex items-start">
                   <input
                     type="checkbox"
-                    {...register('terms_accepted', { required: 'You must accept the terms and conditions' })}
+                    {...register('terms_accepted', { required: t('admission.errors.termsRequired') })}
                     className="mt-1 mr-3"
                   />
                   <label className="text-sm text-gray-700">
-                    I accept the <a href="#" className="text-primary-600 hover:underline">Terms and Conditions</a> *
+                    {t('admission.consent.termsAccepted')} <a href="#" className="text-primary-600 hover:underline">{t('admission.consent.termsLink')}</a> *
                   </label>
                 </div>
                 {errors.terms_accepted && <p className="error-text">{errors.terms_accepted.message}</p>}
@@ -420,11 +426,11 @@ export default function AdmissionRequestPage() {
                 <div className="flex items-start">
                   <input
                     type="checkbox"
-                    {...register('data_privacy_accepted', { required: 'You must accept the data privacy policy' })}
+                    {...register('data_privacy_accepted', { required: t('admission.errors.dataPrivacyRequired') })}
                     className="mt-1 mr-3"
                   />
                   <label className="text-sm text-gray-700">
-                    I accept the <a href="#" className="text-primary-600 hover:underline">Data Privacy Policy</a> *
+                    {t('admission.consent.dataPrivacyAccepted')} <a href="#" className="text-primary-600 hover:underline">{t('admission.consent.dataPrivacyLink')}</a> *
                   </label>
                 </div>
                 {errors.data_privacy_accepted && <p className="error-text">{errors.data_privacy_accepted.message}</p>}
@@ -436,12 +442,12 @@ export default function AdmissionRequestPage() {
           <div className="flex justify-between mt-8 pt-6 border-t">
             {step > 1 && (
               <button type="button" onClick={prevStep} className="btn-secondary">
-                Previous
+                {t('admission.buttons.previous')}
               </button>
             )}
             {step < 3 && (
               <button type="button" onClick={nextStep} className="btn-primary ml-auto">
-                Next
+                {t('admission.buttons.next')}
               </button>
             )}
             {step === 3 && (
@@ -450,14 +456,14 @@ export default function AdmissionRequestPage() {
                 className="btn-primary ml-auto"
                 disabled={mutation.isPending}
               >
-                {mutation.isPending ? 'Submitting...' : 'Submit Application'}
+                {mutation.isPending ? t('admission.buttons.submitting') : t('admission.buttons.submit')}
               </button>
             )}
           </div>
 
           {mutation.isError && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-              Failed to submit application. Please try again.
+              {t('admission.errors.submitFailed')}
             </div>
           )}
         </div>

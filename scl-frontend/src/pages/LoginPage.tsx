@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../store/AuthContext'
 
 export default function LoginPage() {
   const { login, loginAsGuest, isAuthenticated, isGuest } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,7 +32,7 @@ export default function LoginPage() {
       await login(email, password)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please try again.')
+      setError(err.response?.data?.detail || t('login.loginFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -44,7 +46,7 @@ export default function LoginPage() {
       await loginAsGuest()
       navigate('/admission')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Guest login failed. Please try again.')
+      setError(err.response?.data?.detail || t('login.guestLoginFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -58,8 +60,8 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <span className="text-white font-bold text-3xl">S</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">School Management System</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account or continue as guest</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('login.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('login.subtitle')}</p>
         </div>
 
         {/* Login Card */}
@@ -75,7 +77,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label htmlFor="email" className="label">
-                Email Address
+                {t('login.emailLabel')}
               </label>
               <input
                 id="email"
@@ -83,14 +85,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-field"
-                placeholder="admin@school.local"
+                placeholder={t('login.emailPlaceholder')}
                 required
               />
             </div>
 
             <div>
               <label htmlFor="password" className="label">
-                Password
+                {t('login.passwordLabel')}
               </label>
               <input
                 id="password"
@@ -108,7 +110,7 @@ export default function LoginPage() {
               className="w-full btn-primary py-3 font-medium"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? t('login.signingIn') : t('login.signIn')}
             </button>
           </form>
 
@@ -118,7 +120,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">or</span>
+              <span className="px-4 bg-white text-gray-500">{t('login.or')}</span>
             </div>
           </div>
 
@@ -128,19 +130,19 @@ export default function LoginPage() {
             className="w-full btn-outline py-3 font-medium"
             disabled={isLoading}
           >
-            Continue as Guest
+            {t('login.continueAsGuest')}
           </button>
 
           <p className="text-center text-sm text-gray-500 mt-4">
-            Guest users can submit admission requests without creating an account
+            {t('login.guestDescription')}
           </p>
         </div>
 
         {/* Demo Credentials */}
         <div className="mt-6 p-4 bg-white/50 rounded-lg text-center">
-          <p className="text-sm text-gray-600 font-medium mb-2">Demo Credentials</p>
-          <p className="text-xs text-gray-500">Admin: admin@school.local / admin123</p>
-          <p className="text-xs text-gray-500">Staff: staff@school.local / staff123</p>
+          <p className="text-sm text-gray-600 font-medium mb-2">{t('login.demoCredentials')}</p>
+          <p className="text-xs text-gray-500">{t('login.demoAdmin')}</p>
+          <p className="text-xs text-gray-500">{t('login.demoStaff')}</p>
         </div>
       </div>
     </div>

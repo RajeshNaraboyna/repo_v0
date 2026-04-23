@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import resultService from '../services/resultService'
 import type { ResultExamSummary } from '../types'
 
@@ -14,6 +15,7 @@ const EXAM_TYPE_LABELS: Record<string, string> = {
 
 export default function ResultsPage() {
   const [yearFilter, setYearFilter] = useState<string>('')
+  const { t } = useTranslation()
 
   const { data: exams = [], isLoading, error } = useQuery({
     queryKey: ['result-exams', yearFilter],
@@ -29,9 +31,9 @@ export default function ResultsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Results</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('results.title')}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          View and upload student results by exam, class, and subject
+          {t('results.subtitle')}
         </p>
       </div>
 
@@ -56,7 +58,7 @@ export default function ResultsPage() {
 
       {/* Loading / Error */}
       {isLoading && (
-        <div className="text-center py-12 text-gray-500">Loading exams…</div>
+        <div className="text-center py-12 text-gray-500">{t('results.loading')}</div>
       )}
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-lg">
@@ -70,13 +72,13 @@ export default function ResultsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classes</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Results</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.examName')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.type')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.academicYear')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.date')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.classes')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.resultCount')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('results.viewClasses')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -117,7 +119,7 @@ export default function ResultsPage() {
                         to={`/results/${exam.exam_id}`}
                         className="text-primary-600 hover:text-primary-800"
                       >
-                        View Classes
+                        {t('results.viewClasses')}
                       </Link>
                     </td>
                   </tr>

@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../store/AuthContext'
 import admissionService from '../services/admissionService'
 import type { AdmissionStatus } from '../types'
@@ -32,6 +33,7 @@ const statusColors: Record<AdmissionStatus, { bg: string; text: string }> = {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [chartType, setChartType] = useState<ChartType>('bar')
 
   const { data: requests, isLoading } = useQuery({
@@ -67,30 +69,30 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back, {user?.name}</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+        <p className="text-gray-600 mt-2">{t('dashboard.welcome')} {user?.name}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div className="card">
-          <p className="text-sm text-gray-500">Total Applications</p>
+          <p className="text-sm text-gray-500">{t('dashboard.totalApplications')}</p>
           <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Pending Review</p>
+          <p className="text-sm text-gray-500">{t('dashboard.pendingReview')}</p>
           <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Approved</p>
+          <p className="text-sm text-gray-500">{t('dashboard.approved')}</p>
           <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Admitted</p>
+          <p className="text-sm text-gray-500">{t('dashboard.admitted')}</p>
           <p className="text-3xl font-bold text-teal-600">{stats.admitted}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500">Rejected</p>
+          <p className="text-sm text-gray-500">{t('dashboard.rejected')}</p>
           <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
         </div>
       </div>
@@ -98,7 +100,7 @@ export default function DashboardPage() {
       {/* Students per Class Chart */}
       <div className="card mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Students per Class</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('dashboard.studentsPerClass')}</h2>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
             {(['bar', 'line', 'pie'] as ChartType[]).map((type) => (
               <button
@@ -122,7 +124,7 @@ export default function DashboardPage() {
           </div>
         ) : studentsPerClass.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-gray-400">
-            No admitted students yet
+            {t('dashboard.noAdmittedStudents')}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
@@ -165,7 +167,7 @@ export default function DashboardPage() {
                   cy="50%"
                   outerRadius={110}
                   label={({ className, percent }) =>
-                    `${className} (${(percent * 100).toFixed(0)}%)`
+                    `${className} (${((percent ?? 0) * 100).toFixed(0)}%)`
                   }
                 >
                   {studentsPerClass.map((_, i) => (
@@ -182,7 +184,7 @@ export default function DashboardPage() {
 
       {/* Recent Applications Table */}
       <div className="card">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Applications</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.recentApplications')}</h2>
 
         {isLoading ? (
           <div className="text-center py-8">
@@ -195,11 +197,11 @@ export default function DashboardPage() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">ID</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Student Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Grade</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Submitted</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('dashboard.studentName')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('dashboard.grade')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('dashboard.status')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('dashboard.date')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('dashboard.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,7 +227,7 @@ export default function DashboardPage() {
                         to={`/admission/view/${request.id}`}
                         className="text-primary-600 hover:text-primary-800 font-medium text-sm"
                       >
-                        View
+                        {t('dashboard.view')}
                       </Link>
                     </td>
                   </tr>
@@ -235,7 +237,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            No applications found
+            {t('dashboard.noApplications')}
           </div>
         )}
       </div>

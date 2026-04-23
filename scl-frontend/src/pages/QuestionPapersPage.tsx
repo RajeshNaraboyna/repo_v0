@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import questionPaperService from '../services/questionPaperService'
 import type { QuestionPaperResponse, QuestionPaperStatus } from '../types'
 
@@ -46,6 +47,7 @@ const EXAM_TYPE_LABELS: Record<string, string> = {
 export default function QuestionPapersPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [subjectFilter, setSubjectFilter] = useState('')
@@ -85,9 +87,9 @@ export default function QuestionPapersPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Question Papers</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('questionPapers.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Create, review and publish question papers
+            {t('questionPapers.subtitle')}
           </p>
         </div>
         <Link
@@ -146,7 +148,7 @@ export default function QuestionPapersPage() {
 
       {/* Loading / Error */}
       {isLoading && (
-        <div className="text-center py-12 text-gray-500">Loading question papers…</div>
+        <div className="text-center py-12 text-gray-500">{t('questionPapers.loading')}</div>
       )}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
@@ -165,15 +167,15 @@ export default function QuestionPapersPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Exam</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marks</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Questions</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.title_col')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.subject')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.class')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.examType')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.totalMarks')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.questions')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.status')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.updated')}</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('questionPapers.actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -207,7 +209,7 @@ export default function QuestionPapersPage() {
                         onClick={() => navigate(`/question-papers/${paper.id}`)}
                         className="text-primary-600 hover:text-primary-800"
                       >
-                        {paper.status === 'draft' || paper.status === 'review' ? 'Edit' : 'View'}
+                        {paper.status === 'draft' || paper.status === 'review' ? t('questionPapers.edit') : t('questionPapers.view')}
                       </button>
                       <DownloadPdfButton paper={paper} />
                       {paper.status === 'draft' && (
@@ -215,7 +217,7 @@ export default function QuestionPapersPage() {
                           onClick={() => handleDelete(paper)}
                           className="text-red-600 hover:text-red-800 ml-2"
                         >
-                          Delete
+                          {t('questionPapers.delete')}
                         </button>
                       )}
                     </td>
