@@ -1,0 +1,71 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug: SCL API",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--host", "0.0.0.0",
+                "--port", "4002"
+            ],
+            "cwd": "${workspaceFolder}/scl-api",
+            "envFile": "${workspaceFolder}/scl-api/.env",
+            "python": "${workspaceFolder}/scl-api/.venv/Scripts/python.exe",
+            "justMyCode": true,
+            "jinja": true
+        },
+        {
+            "name": "Debug: SCL RAG",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--host", "0.0.0.0",
+                "--port", "4003"
+            ],
+            "cwd": "${workspaceFolder}/scl-rag",
+            "envFile": "${workspaceFolder}/scl-rag/.env",
+            "python": "${workspaceFolder}/scl-rag/.venv/Scripts/python.exe",
+            "justMyCode": true,
+            "jinja": true
+        },
+        {
+            "name": "Run: SCL API (with reload)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--host", "0.0.0.0",
+                "--port", "4002",
+                "--reload"
+            ],
+            "cwd": "${workspaceFolder}/scl-api",
+            "envFile": "${workspaceFolder}/scl-api/.env",
+            "python": "${workspaceFolder}/scl-api/.venv/Scripts/python.exe",
+            "justMyCode": false,
+            "jinja": true
+        },
+        {
+            "name": "Run: SCL RAG (with reload)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "app.main:app",
+                "--host", "0.0.0.0",
+                "--port", "4003",
+                "--reload"
+            ],
+            "cwd": "${workspaceFolder}/scl-rag",
+            "envFile": "${workspaceFolder}/scl-rag/.env",
+            "python": "${workspaceFolder}/scl-rag/.venv/Scripts/python.exe",
+            "justMyCode": false,
+            "jinja": true
+        }
+    ]
+}

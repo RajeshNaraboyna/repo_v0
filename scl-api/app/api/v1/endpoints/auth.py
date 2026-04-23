@@ -1,140 +1,193 @@
-"""Authentication endpoints."""
+"""Authentication endpoints backed by Supabase Auth."""
 
-from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.core.config import settings
-from app.core.security import (
-    create_access_token,
-    create_guest_token,
-    verify_password,
-    decode_token
-)
+from app.core.security import create_guest_token, decode_token_async
 from app.schemas.auth import (
+    GuestTokenResponse,
+    RefreshRequest,
     Token,
-    UserLogin,
     UserResponse,
-    GuestTokenResponse
 )
-from app.services.user_service import get_user_by_email, authenticate_user
+from app.services import supabase_auth_service
 
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
+def _user_response_from_supabase(supabase_user: dict) -> UserResponse:
+    """Map a Supabase user object to our UserResponse schema."""
+    metadata = supabase_user.get("user_metadata") or {}
+    app_metadata = supabase_user.get("app_metadata") or {}
+    role = (
+        metadata.get("role")
+        or app_metadata.get("role")
+        or "staff"
+    )
+    name = metadata.get("name") or metadata.get("full_name") or supabase_user.get("email", "")
+    return UserResponse(
+        id=supabase_user["id"],
+        email=supabase_user.get("email", ""),
+        name=name,
+        role=role,
+    )
+
+
 async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[dict]:
-    """Get the current authenticated user from the JWT token."""
+    """Resolve the current user from a Bearer token.
+
+    Accepts both Supabase JWTs and local guest tokens.
+    Returns the decoded payload dict or None if unauthenticated.
+    """
     if not token:
         return None
-    
-    payload = decode_token(token)
-    if not payload:
-        return None
-    
-    return payload
+
+    # Local decode handles guest tokens, legacy HS256, and ECC P-256 Supabase JWTs
+    payload = await decode_token_async(token)
+    print(f"Decoded token payload: {payload}")
+    if payload:
+        # Guest/local tokens already carry the correct 'role'.
+        # Supabase JWTs have a DB-level role ('authenticated') at the top level;
+        # the application role is nested inside user_metadata / app_metadata.
+        if payload.get("type") != "guest":
+            user_metadata = payload.get("user_metadata") or {}
+            app_metadata = payload.get("app_metadata") or {}
+            app_role = user_metadata.get("role") or app_metadata.get("role") or "staff"
+            payload = {**payload, "role": app_role}
+        return payload
+
+    # Fallback: validate against Supabase API (e.g. when JWT secret is not configured)
+    supabase_user = await supabase_auth_service.get_user_from_token(token)
+    if supabase_user:
+        metadata = supabase_user.get("user_metadata") or {}
+        app_metadata = supabase_user.get("app_metadata") or {}
+        return {
+            "sub": supabase_user.get("email"),
+            "id": supabase_user.get("id"),
+            "type": "user",
+            "role": metadata.get("role") or app_metadata.get("role") or "staff",
+            "email": supabase_user.get("email"),
+        }
+
+    return None
 
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    """
-    Authenticate user and return access token.
-    
-    - **username**: User's email address
-    - **password**: User's password
-    """
-    user = await authenticate_user(form_data.username, form_data.password)
-    
-    if not user:
+    """Authenticate user via Supabase and return session tokens."""
+    session = await supabase_auth_service.sign_in_with_password(
+        form_data.username, form_data.password
+    )
+
+    if not session or "access_token" not in session:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["email"], "type": "user", "role": user["role"]},
-        expires_delta=access_token_expires
-    )
-    
+
+    supabase_user = session.get("user", {})
+    user_resp = _user_response_from_supabase(supabase_user) if supabase_user else None
+
     return Token(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserResponse(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            role=user["role"]
+        access_token=session["access_token"],
+        token_type=session.get("token_type", "bearer"),
+        expires_in=session.get("expires_in"),
+        expires_at=session.get("expires_at"),
+        refresh_token=session.get("refresh_token"),
+        user=user_resp,
+    )
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(body: RefreshRequest):
+    """Refresh a Supabase session using a refresh token."""
+    session = await supabase_auth_service.refresh_session(body.refresh_token)
+
+    if not session or "access_token" not in session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
         )
+
+    supabase_user = session.get("user", {})
+    user_resp = _user_response_from_supabase(supabase_user) if supabase_user else None
+
+    return Token(
+        access_token=session["access_token"],
+        token_type=session.get("token_type", "bearer"),
+        expires_in=session.get("expires_in"),
+        expires_at=session.get("expires_at"),
+        refresh_token=session.get("refresh_token"),
+        user=user_resp,
     )
 
 
 @router.post("/guest", response_model=GuestTokenResponse)
 async def guest_login():
-    """
-    Get a guest access token for limited functionality.
-    
-    Guest users can:
-    - Submit admission requests
-    - View public information
-    
-    No login required.
-    """
+    """Issue a short-lived guest token for unauthenticated access."""
     if not settings.GUEST_ACCESS_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Guest access is not enabled"
+            detail="Guest access is not enabled",
         )
-    
+
     guest_token = create_guest_token()
-    
+
     return GuestTokenResponse(
         access_token=guest_token,
         token_type="bearer",
         is_guest=True,
         expires_in=settings.GUEST_TOKEN_EXPIRE_MINUTES * 60,
-        permissions=["read:public", "create:admission_request"]
+        permissions=["read:public", "create:admission_request"],
     )
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: dict = Depends(get_current_user)):
-    """Get current authenticated user information."""
+async def get_current_user_info(
+    token: Optional[str] = Depends(oauth2_scheme),
+    current_user: Optional[dict] = Depends(get_current_user),
+):
+    """Return the profile of the currently authenticated user."""
     if not current_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
+            detail="Not authenticated",
         )
-    
+
     if current_user.get("type") == "guest":
         return UserResponse(
             id="guest",
             email="guest@school.local",
             name="Guest User",
-            role="guest"
+            role="guest",
         )
-    
-    # For regular users, fetch from database
-    user = await get_user_by_email(current_user.get("sub"))
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
+
+    # Fetch up-to-date profile from Supabase
+    if token:
+        supabase_user = await supabase_auth_service.get_user_from_token(token)
+        if supabase_user:
+            return _user_response_from_supabase(supabase_user)
+
+    # Fallback: build from decoded token payload
     return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        name=user["name"],
-        role=user["role"]
+        id=current_user.get("id") or current_user.get("sub", ""),
+        email=current_user.get("email") or current_user.get("sub", ""),
+        name=current_user.get("email") or current_user.get("sub", ""),
+        role=current_user.get("role", "staff"),
     )
 
 
 @router.post("/logout")
-async def logout():
-    """Logout the current user (client should discard the token)."""
+async def logout(token: Optional[str] = Depends(oauth2_scheme)):
+    """Revoke the current session in Supabase."""
+    if token:
+        await supabase_auth_service.sign_out(token)
     return {"message": "Successfully logged out"}
+
+

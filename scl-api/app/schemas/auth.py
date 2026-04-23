@@ -22,7 +22,15 @@ class Token(BaseModel):
     """JWT token response schema."""
     access_token: str
     token_type: str
+    expires_in: Optional[int] = None
+    expires_at: Optional[int] = None
+    refresh_token: Optional[str] = None
     user: Optional[UserResponse] = None
+
+
+class RefreshRequest(BaseModel):
+    """Token refresh request schema."""
+    refresh_token: str
 
 
 class GuestTokenResponse(BaseModel):

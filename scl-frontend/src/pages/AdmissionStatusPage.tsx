@@ -3,29 +3,15 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import admissionService from '../services/admissionService'
 import type { AdmissionStatus } from '../types'
-import {
-  Box, Typography, Card, CardContent, TextField, Button, Chip, CircularProgress,
-} from '@mui/material'
-import ErrorOutlinedIcon from '@mui/icons-material/ErrorOutlined'
 
-const statusChipColor: Record<AdmissionStatus, 'default' | 'warning' | 'info' | 'error' | 'success'> = {
-  pending: 'warning',
-  under_review: 'info',
-  documents_required: 'warning',
-  approved: 'success',
-  rejected: 'error',
-  waitlisted: 'default',
-  admitted: 'success',
-}
-
-const statusLabels: Record<AdmissionStatus, string> = {
-  pending: 'Pending',
-  under_review: 'Under Review',
-  documents_required: 'Documents Required',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  waitlisted: 'Waitlisted',
-  admitted: 'Admitted',
+const statusColors: Record<AdmissionStatus, { bg: string; text: string; label: string }> = {
+  pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
+  under_review: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Under Review' },
+  documents_required: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Documents Required' },
+  approved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Approved' },
+  rejected: { bg: 'bg-red-100', text: 'text-red-800', label: 'Rejected' },
+  waitlisted: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Waitlisted' },
+  admitted: { bg: 'bg-teal-100', text: 'text-teal-800', label: 'Admitted' },
 }
 
 export default function AdmissionStatusPage() {
@@ -39,90 +25,124 @@ export default function AdmissionStatusPage() {
   })
 
   const handleSearch = () => {
-    if (manualId) window.location.href = `/admission/status/${manualId}`
+    if (manualId) {
+      window.location.href = `/admission/status/${manualId}`
+    }
   }
 
   if (!requestId) {
     return (
-      <Box sx={{ maxWidth: 520, mx: 'auto' }} className="fade-in">
-        <Card>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h2" gutterBottom>Check Application Status</Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              Enter your application ID to check the status of your admission request.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                fullWidth
-                value={manualId}
-                onChange={(e) => setManualId(e.target.value.toUpperCase())}
-                placeholder="Enter Application ID"
-              />
-              <Button variant="contained" onClick={handleSearch}>Check</Button>
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
+      <div className="max-w-xl mx-auto">
+        <div className="card">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Check Application Status</h2>
+          <p className="text-gray-600 mb-6">
+            Enter your application ID to check the status of your admission request.
+          </p>
+          
+          <div className="flex space-x-3">
+            <input
+              type="text"
+              value={manualId}
+              onChange={(e) => setManualId(e.target.value.toUpperCase())}
+              className="input-field flex-1"
+              placeholder="Enter Application ID"
+            />
+            <button onClick={handleSearch} className="btn-primary">
+              Check Status
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 
   if (isLoading) {
     return (
-      <Box sx={{ maxWidth: 520, mx: 'auto', textAlign: 'center', py: 8 }}>
-        <CircularProgress />
-        <Typography color="text.secondary" sx={{ mt: 2 }}>Loading application status...</Typography>
-      </Box>
+      <div className="max-w-xl mx-auto">
+        <div className="card text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading application status...</p>
+        </div>
+      </div>
     )
   }
 
   if (isError || !data) {
     return (
-      <Box sx={{ maxWidth: 520, mx: 'auto' }} className="fade-in">
-        <Card>
-          <CardContent sx={{ textAlign: 'center', p: 5 }}>
-            <ErrorOutlinedIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
-            <Typography variant="h3" gutterBottom>Application Not Found</Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              We couldn't find an application with ID: <strong>{requestId}</strong>
-            </Typography>
-            <Button variant="contained" component={Link} to="/admission">Submit New Application</Button>
-          </CardContent>
-        </Card>
-      </Box>
+      <div className="max-w-xl mx-auto">
+        <div className="card text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Application Not Found</h2>
+          <p className="text-gray-600 mb-6">
+            We couldn't find an application with ID: <span className="font-mono font-bold">{requestId}</span>
+          </p>
+          <Link to="/admission" className="btn-primary">
+            Submit New Application
+          </Link>
+        </div>
+      </div>
     )
   }
 
+  const statusInfo = statusColors[data.status]
+
   return (
-    <Box sx={{ maxWidth: 520, mx: 'auto' }} className="fade-in">
-      <Card>
-        <CardContent sx={{ p: 4 }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Typography variant="h2">Application Status</Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-              Application ID: <strong style={{ fontFamily: 'monospace' }}>{data.request_id}</strong>
-            </Typography>
-          </Box>
+    <div className="max-w-xl mx-auto">
+      <div className="card">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Application Status</h2>
+          <p className="text-gray-600 mt-1">Application ID: <span className="font-mono font-bold">{data.request_id}</span></p>
+        </div>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[
-              { label: 'Student Name', value: data.student_name },
-              { label: 'Status', value: <Chip label={statusLabels[data.status]} color={statusChipColor[data.status]} size="small" /> },
-              { label: 'Submitted On', value: new Date(data.submitted_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) },
-              { label: 'Last Updated', value: new Date(data.last_updated).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) },
-            ].map((row) => (
-              <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                <Typography color="text.secondary">{row.label}</Typography>
-                {typeof row.value === 'string' ? <Typography sx={{ fontWeight: 600 }}>{row.value}</Typography> : row.value}
-              </Box>
-            ))}
-          </Box>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+            <span className="text-gray-600">Student Name</span>
+            <span className="font-medium text-gray-900">{data.student_name}</span>
+          </div>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
-            <Button variant="outlined" component={Link} to="/admission">Submit Another</Button>
-            <Button variant="contained" color="secondary" onClick={() => refetch()}>Refresh Status</Button>
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
+          <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+            <span className="text-gray-600">Status</span>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bg} ${statusInfo.text}`}>
+              {statusInfo.label}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+            <span className="text-gray-600">Submitted On</span>
+            <span className="font-medium text-gray-900">
+              {new Date(data.submitted_at).toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+            <span className="text-gray-600">Last Updated</span>
+            <span className="font-medium text-gray-900">
+              {new Date(data.last_updated).toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6 pt-6 border-t flex justify-between">
+          <Link to="/admission" className="btn-outline">
+            Submit Another
+          </Link>
+          <button onClick={() => refetch()} className="btn-secondary">
+            Refresh Status
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
