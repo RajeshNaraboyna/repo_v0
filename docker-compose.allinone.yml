@@ -113,20 +113,38 @@ services:
     container_name: scl-app
     restart: unless-stopped
     environment:
-      # API settings
-      APP_ENV: production
-      DEBUG: "false"
+      # Application
+      APP_NAME: ${APP_NAME:-school-management-system}
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      HOST: ${HOST:-0.0.0.0}
+      # API — Database
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-scluser}:${POSTGRES_PASSWORD:-sclpass}@postgres:5432/${POSTGRES_DB:-school_mgmt}
+      # API — Supabase
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      SUPABASE_JWKS_URL: ${SUPABASE_JWKS_URL:-}
+      # API — Security
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
-      CORS_ORIGINS: '["http://localhost", "http://localhost:4001"]'
-      RAG_SERVICE_URL: http://127.0.0.1:4003
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost","http://localhost:4001"]}
+      RAG_SERVICE_URL: ${RAG_SERVICE_URL:-http://127.0.0.1:4003}
+      GUEST_ACCESS_ENABLED: ${GUEST_ACCESS_ENABLED:-true}
+      GUEST_TOKEN_EXPIRE_MINUTES: ${GUEST_TOKEN_EXPIRE_MINUTES:-60}
       # RAG settings
-      MILVUS_HOST: milvus
-      MILVUS_PORT: "19530"
+      MILVUS_HOST: ${MILVUS_HOST:-milvus}
+      MILVUS_PORT: ${MILVUS_PORT:-19530}
+      MILVUS_COLLECTION_NAME: ${MILVUS_COLLECTION_NAME:-student_results}
+      MILVUS_DB_NAME: ${MILVUS_DB_NAME:-default}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-384}
     ports:
-      - "4001:80"     # Frontend (nginx)
-      - "4002:4002"   # API (direct, optional)
-      - "4003:4003"   # RAG (direct, optional)
+      - "${FRONTEND_HOST_PORT:-4001}:80"    # Frontend (nginx)
+      - "${API_HOST_PORT:-4002}:4002"        # API (direct, optional)
+      - "${RAG_HOST_PORT:-4003}:4003"        # RAG (direct, optional)
     depends_on:
       postgres:
         condition: service_healthy
