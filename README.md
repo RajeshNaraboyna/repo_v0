@@ -112,14 +112,6 @@ Once the backend is running:
 - Swagger UI: http://localhost:4002/docs
 - ReDoc: http://localhost:4002/redoc
 
-## Project Structure Reference
-
-This project structure is inspired by the aviator-studio-ai architecture, following similar patterns for:
-- API versioning (v1)
-- Service layer separation
-- Pydantic schemas
-- Component-based UI architecture
-- Configuration management
 
 
 Demo credentials: admin@school.local / admin123
