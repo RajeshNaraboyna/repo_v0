@@ -2,5 +2,8 @@
     "python.defaultInterpreterPath": "${workspaceFolder}/scl-api/.venv/Scripts/python.exe",
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "workbench.editorAssociations": {
+        "*.md": "vscode.markdown.preview.editor"
     }
 }
